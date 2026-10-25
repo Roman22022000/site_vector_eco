@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3390ec">
+<title>LEAF Studio — Панель разработчика</title>
+<style>
+:root{--bg:#f2f5f2;--panel:#fff;--panel2:#f4f6f8;--panel3:#eef3f8;--text:#1f2a20;--muted:#7b8794;--line:#e7ece6;--line-strong:#d9e0e8;--blue:#3390ec;--blueHover:#2481d2;--blueSoft:#e5f1fc;--blueBorder:#c6e1fa;--blueText:#1768ad;--green:#4fae4e;--greenSoft:#e8f7e1;--danger:#e53935;--warning:#9a6b0b;--warningSoft:#fff3d4;--radius-sm:8px;--radius:12px;--radius-lg:16px;--shadow:0 12px 32px rgba(15,25,40,.14);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Helvetica Neue",Arial,sans-serif}
+body.dark{--bg:#0f1418;--panel:#17212b;--panel2:#1f2c39;--panel3:#22303e;--text:#e8eef5;--muted:#8fa3b8;--line:#22303e;--line-strong:#2b3a4b;--blueSoft:#1c3a5c;--blueBorder:#2d5580;--blueText:#91c8ff}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--font);-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button,a{touch-action:manipulation}
+button{border:0;cursor:pointer;background:transparent;color:inherit;transition:background-color .14s,color .14s,transform .14s}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+a{color:var(--blue);text-decoration:none}
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 18px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.3px}
+.leaf{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#54b3ff,#3390ec);color:#fff;font-size:16px;box-shadow:0 2px 6px rgba(51,144,236,.35)}
+.top small{color:var(--muted)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);color:inherit;font-size:13px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--panel2)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;box-shadow:0 2px 6px rgba(51,144,236,.3)}
+.btn.primary:hover{background:var(--blueHover)}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.small{min-height:30px;padding:6px 10px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);max-width:1440px;margin:auto;min-height:calc(100vh - 56px)}
+.side{padding:16px 10px;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:4px}
+.side-title{padding:8px 10px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.7px;text-transform:uppercase}
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border-radius:var(--radius-sm);font-size:13px;font-weight:500}
+.nav button:hover{background:var(--panel2)}
+.nav button.active{background:var(--blueSoft);color:var(--blueText);font-weight:600}
+.nav .nav-icon{width:22px;text-align:center;font-size:15px}
+.side-note{margin-top:auto;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--muted);font-size:11px;line-height:1.5}
+.main{padding:22px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.pagehead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:4px;flex-wrap:wrap}
+.pagehead h1{font-size:24px;letter-spacing:-.7px;margin:0 0 5px}
+.pagehead p{margin:0;color:var(--muted);max-width:750px;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:var(--panel2);color:var(--muted);font-size:11px;font-weight:600;line-height:1.2}
+.badge.blue{background:var(--blueSoft);color:var(--blueText);border:1px solid var(--blueBorder)}
+.badge.warn{background:var(--warningSoft);color:var(--warning)}
+.badge.ok{background:var(--greenSoft);color:#2d6b23}
+.badge.red{background:#fde8e8;color:#a02020}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.card h2{margin:0 0 8px;font-size:15px;letter-spacing:-.2px}
+.card h3{margin:0 0 6px;font-size:13px}
+.muted{color:var(--muted)}
+.small{font-size:11px}
+.span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-7{grid-column:span 7}.span-6{grid-column:span 6}.span-5{grid-column:span 5}.span-4{grid-column:span 4}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.metric{padding:13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel2)}
+.metric .label{font-size:11px;color:var(--muted);font-weight:500}
+.metric .value{font-size:22px;font-weight:800;margin-top:5px;overflow-wrap:anywhere}
+.section{display:none}
+.section.active{display:block}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 14px;flex-wrap:wrap}
+.section-head h2{font-size:19px;margin:0}
+.section-head .muted{font-size:12px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;color:var(--muted);font-weight:650}
+.field input,.field select,.field textarea{width:100%;min-width:0;padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel2);color:var(--text);font-size:13px;transition:border-color .14s,background-color .14s}
+.field input:focus,.field select:focus,.field textarea:focus{background:var(--panel);border-color:var(--blue);outline:none;box-shadow:0 0 0 3px rgba(51,144,236,.15)}
+.field textarea{min-height:90px;resize:vertical;font-family:inherit}
+.field input[readonly]{opacity:.65;cursor:not-allowed}
+.help{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.divider{height:1px;background:var(--line);margin:15px 0}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.checklist{display:grid;gap:9px}
+.check{display:flex;align-items:flex-start;gap:9px;font-size:12px}
+.check input{margin-top:3px;accent-color:var(--blue)}
+.statusbox{padding:11px;border-radius:var(--radius-sm);background:var(--panel2);font-size:12px;border:1px solid var(--line);line-height:1.5}
+.statusbox.warn{background:var(--warningSoft);color:var(--warning)}
+.statusbox.ok{background:var(--greenSoft);color:#2d6b23}
+.drop{display:grid;place-items:center;min-height:120px;padding:16px;text-align:center;border:1px dashed var(--line-strong);border-radius:var(--radius-sm);background:var(--panel2)}
+.drop input{max-width:100%}
+.preview-card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--panel)}
+.cover{display:grid;place-items:center;min-height:150px;background:linear-gradient(135deg,#dff3d2,#e5f1fc);font-size:38px;color:#1768ad}
+.preview-body{padding:14px}
+.preview-body h3{margin:0 0 6px;font-size:18px}
+.preview-body p{margin:0 0 10px;color:var(--muted);font-size:12px;line-height:1.5}
+.preview-meta{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.preview-meta span{padding:4px 7px;border-radius:6px;background:var(--panel2);color:var(--muted);font-size:10px;font-weight:600}
+.preview-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:10px;font-size:11px}
+.table{width:100%;border-collapse:collapse;font-size:12px}
+.table th,.table td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.table th{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;overflow-wrap:anywhere}
+.games-list{display:flex;flex-direction:column;gap:8px}
+.game-item{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+.game-item .thumb{width:64px;height:64px;border-radius:var(--radius-sm);display:grid;place-items:center;background:linear-gradient(135deg,#dff3d2,#e5f1fc);font-size:24px;color:#1768ad;overflow:hidden}
+.game-item .thumb img{width:100%;height:100%;object-fit:cover}
+.game-item .info{min-width:0}
+.game-item .info h4{margin:0 0 3px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.game-item .info .meta{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.game-item .controls{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.locked-section{border:1px dashed var(--line-strong);border-radius:var(--radius);padding:14px;background:var(--panel2)}
+.locked-item{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:var(--radius-sm);background:var(--panel);border:1px solid var(--line);margin-bottom:8px}
+.locked-item .lock-icon{font-size:18px;color:var(--muted);flex-shrink:0;width:24px;text-align:center}
+.locked-item .locked-info{flex:1;min-width:0}
+.locked-item .locked-info strong{display:block;font-size:13px;margin-bottom:2px}
+.locked-item .locked-info span{display:block;font-size:11px;color:var(--muted);line-height:1.5}
+.locked-item .locked-info .toggle{margin-top:6px;font-size:10px;color:var(--muted);font-family:ui-monospace,monospace;opacity:.7}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);z-index:50;max-width:90vw;background:#1f2a20;color:#fff;padding:11px 16px;border-radius:var(--radius);display:none;font-size:13px;opacity:0;transition:opacity .2s,transform .2s;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toast.show{display:block;opacity:1;transform:translateX(-50%) translateY(0)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,25,40,.55);z-index:40;display:none;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(2px)}
+.modal-backdrop.open{display:flex}
+.modal{width:min(680px,100%);max-height:90vh;overflow:auto;background:var(--panel);border-radius:var(--radius-lg);padding:22px;box-shadow:0 24px 60px rgba(15,25,40,.22);border:1px solid var(--line)}
+.modal h2{font-size:18px;margin:0 0 8px;font-weight:700}
+.modal p{font-size:13px;color:var(--muted);margin:0 0 16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.foot{padding:18px 0;color:var(--muted);font-size:11px;text-align:center}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .side{position:sticky;top:56px;z-index:8;border-right:0;border-bottom:1px solid var(--line);padding:6px;overflow:auto;flex-direction:row}
+  .side-title,.side-note{display:none}
+  .nav{flex-direction:row;min-width:max-content}
+  .nav button{width:auto;padding:9px 11px;white-space:nowrap}
+  .main{padding:14px}
+  .span-8,.span-7,.span-6,.span-5,.span-4{grid-column:span 12}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pagehead h1{font-size:21px}
+}
+@media(max-width:560px){
+  .main{padding:10px}
+  .card{padding:12px}
+  .form-grid{grid-template-columns:1fr}
+  .field.full{grid-column:auto}
+  .pagehead{flex-direction:column}
+  .top small{display:none}
+  .metrics{gap:7px}
+  .metric{padding:10px}
+  .metric .value{font-size:19px}
+  .btn{min-height:34px;padding:7px 9px;font-size:12px}
+  .game-item{grid-template-columns:48px 1fr}
+  .game-item .controls{grid-column:1/-1;justify-content:stretch}
+  .game-item .controls .btn{flex:1}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><span class="leaf">⌁</span><span>LEAF Studio</span></div>
+  <small>Панель разработчика · этап 4</small>
+  <span class="spacer"></span>
+  <button class="btn" id="themeBtn" title="Сменить тему">◐</button>
+  <button class="btn back-to-board" id="backToBoard">← Вернуться в аккаунт</button>
+  <!-- [СИНХРОНИЗАЦИЯ] Кнопка «Борд сайта» ведёт на board.html -->
+  <a class="btn primary back-to-board" href="board12.html">▦ Борд сайта</a>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <div class="side-title">Центр разработчика</div>
+    <nav class="nav" id="nav">
+      <button class="active" data-section="overview"><span class="nav-icon">▦</span> Обзор</button>
+      <button data-section="account"><span class="nav-icon">◉</span> Профиль</button>
+      <button data-section="wallet"><span class="nav-icon">◇</span> Кошелёк TON</button>
+      <button data-section="upload"><span class="nav-icon">↑</span> Загрузка игры</button>
+      <button data-section="gamecard"><span class="nav-icon">▤</span> Карточка игры</button>
+      <button data-section="games"><span class="nav-icon">▣</span> Мои игры</button>
+      <button data-section="security"><span class="nav-icon">⬡</span> Безопасность</button>
+      <button data-section="versions"><span class="nav-icon">◷</span> Версии</button>
+      <button data-section="data"><span class="nav-icon">⇄</span> Перенос данных</button>
+      <button data-section="online"><span class="nav-icon">🔒</span> Онлайн (заблокировано)</button>
+    </nav>
+    <div class="side-note">Локальный прототип. Данные сохраняются в браузере (localStorage + IndexedDB) и не теряются после выключения.</div>
+  </aside>
+
+  <main class="main">
+    <section class="section active" id="section-overview">
+      <div class="pagehead">
+        <div><h1>Центр разработчика</h1><p>Регистрация, кошелёк, загрузка игры, карточка каталога и список выложенных игр. Всё сохраняется локально.</p></div>
+        <span class="badge blue" id="modeBadge">Локальный прототип</span>
+      </div>
+      <div class="grid">
+        <div class="card span-12">
+          <div class="metrics">
+            <div class="metric"><div class="label">Профиль</div><div class="value" id="metricProfile">Не заполнен</div></div>
+            <div class="metric"><div class="label">Кошелёк</div><div class="value" id="metricWallet">Не привязан</div></div>
+            <div class="metric"><div class="label">Файл игры</div><div class="value" id="metricFile">Не загружен</div></div>
+            <div class="metric"><div class="label">Готовность карточки</div><div class="value" id="metricReady">0%</div></div>
+          </div>
+        </div>
+        <div class="card span-7">
+          <h2>Путь публикации</h2>
+          <table class="table"><tbody>
+            <tr><td>1. Профиль разработчика</td><td id="stepAccount"><span class="badge">Не заполнен</span></td></tr>
+            <tr><td>2. Адрес TON-кошелька</td><td id="stepWallet"><span class="badge">Не привязан</span></td></tr>
+            <tr><td>3. Файл HTML5-игры</td><td id="stepUpload"><span class="badge">Не загружен</span></td></tr>
+            <tr><td>4. Карточка игры</td><td id="stepCard"><span class="badge">Черновик</span></td></tr>
+            <tr><td>5. Выложенные игры</td><td id="stepGames"><span class="badge">0</span></td></tr>
+            <tr><td>6. Проверка безопасности</td><td><span class="badge warn">Требует сервера</span></td></tr>
+          </tbody></table>
+          <div class="actions">
+            <button class="btn primary" data-go="account">Заполнить профиль</button>
+            <button class="btn" data-go="gamecard">Создать карточку</button>
+            <button class="btn" data-go="games">Мои игры</button>
+          </div>
+        </div>
+        <div class="card span-5">
+          <h2>Последний проект из борда</h2>
+          <p id="boardProjectName" class="muted">Информация ещё не получена.</p>
+          <div class="statusbox" id="boardProjectInfo">Открой эту страницу из меню «Мой профиль → Панель разработчика».</div>
+          <div class="actions">
+            <button class="btn back-to-board" id="refreshBridge">Обновить данные</button>
+            <!-- [СИНХРОНИЗАЦИЯ] Ссылка на board.html -->
+            <a class="btn back-to-board" href="board12.html">▦ Борд сайта</a>
+          </div>
+        </div>
+        <!-- Реестр игр в обзоре -->
+        <div class="card span-12" id="developerGamesPanel">
+          <div class="section-head">
+            <div><h2>Мои игры в разработке</h2><div class="muted small">Записи с HTML-кодом можно вставлять на борд.</div></div>
+            <span class="badge blue" id="developerGamesCount">0 игр</span>
+          </div>
+          <div id="developerGamesList" class="grid"><div class="statusbox">Пока нет сохранённых игр.</div></div>
+          <div class="actions">
+            <button class="btn" id="refreshDeveloperGames">Обновить список</button>
+            <button class="btn" id="exportGamesJson">Экспорт игр JSON</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-account">
+      <div class="section-head"><div><h2>Профиль разработчика</h2><div class="muted">Данные для карточек и каталога.</div></div><span class="badge">Локально</span></div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="field"><label for="devName">Имя / название студии *</label><input id="devName" placeholder="Leaf Games" maxlength="80"></div>
+          <div class="field"><label for="devHandle">Псевдоним</label><input id="devHandle" placeholder="@studio" maxlength="50"></div>
+          <div class="field"><label for="devEmail">Email</label><input id="devEmail" type="email" placeholder="studio@example.com" maxlength="120"></div>
+          <div class="field"><label for="devSite">Сайт</label><input id="devSite" type="url" placeholder="https://example.com" maxlength="250"></div>
+          <div class="field full"><label for="devBio">Описание</label><textarea id="devBio" placeholder="Какие игры создаёшь?" maxlength="800"></textarea></div>
+          <div class="field"><label for="devCountry">Регион</label><input id="devCountry" placeholder="Необязательно" maxlength="80"></div>
+          <div class="field"><label for="devRole">Тип аккаунта</label><select id="devRole"><option value="individual">Разработчик</option><option value="studio">Студия</option><option value="team">Команда</option></select></div>
+        </div>
+        <div class="actions"><button class="btn primary" id="saveAccount">Сохранить профиль</button><button class="btn" id="clearAccount">Очистить</button></div>
+      </div>
+    </section>
+
+    <section class="section" id="section-wallet">
+      <div class="section-head"><div><h2>Кошелёк разработчика</h2><div class="muted">Публичный адрес.</div></div><span class="badge warn">TON Connect не подключён</span></div>
+      <div class="grid">
+        <div class="card span-7">
+          <div class="field"><label for="walletAddress">Публичный адрес TON</label><input id="walletAddress" placeholder="EQ… или UQ…" maxlength="100" autocomplete="off"><div class="help">Только публичный адрес. Никогда не вводи seed-фразу.</div></div>
+          <div class="field" style="margin-top:12px"><label for="walletPurpose">Назначение</label><select id="walletPurpose"><option value="developer">Идентификатор</option><option value="payments">Платежи</option><option value="both">Оба</option></select></div>
+          <div class="checklist" style="margin-top:13px">
+            <label class="check"><input type="checkbox" id="walletDisclosure"> Адрес будет виден в карточке.</label>
+            <label class="check"><input type="checkbox" id="walletTerms"> Понимаю, что адрес не подтверждает владение.</label>
+          </div>
+          <div class="actions"><button class="btn primary" id="saveWallet">Сохранить адрес</button><button class="btn" id="clearWallet">Удалить</button></div>
+          <div class="statusbox warn" style="margin-top:12px">Проверка подписи — в разделе «Онлайн».</div>
+        </div>
+        <div class="card span-5">
+          <h2>Публичная идентификация</h2>
+          <p class="muted small">Кошелёк может быть скомпрометирован. Не считай владельца виновным автоматически.</p>
+          <div class="statusbox" id="walletStatus">Адрес не сохранён.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-upload">
+      <div class="section-head"><div><h2>Загрузка HTML5-игры</h2><div class="muted">Подготовка файла.</div></div><span class="badge">Демо</span></div>
+      <div class="grid">
+        <div class="card span-7">
+          <div class="drop">
+            <strong>HTML-файл или ZIP</strong>
+            <p class="muted small">ZIP не распаковывается. HTML сразу идёт в поле «HTML-код».</p>
+            <input type="file" id="gameFile" accept=".html,.htm,.zip, text/html, application/zip">
+          </div>
+          <div id="fileInfo" class="statusbox" style="margin-top:12px">Файл не выбран.</div>
+          <div class="field" style="margin-top:12px"><label for="entryFile">Точка входа</label><input id="entryFile" value="index.html" maxlength="120"></div>
+          <div class="actions"><button class="btn primary" id="rememberFile">Сохранить сведения</button><button class="btn" id="forgetFile">Сбросить файл</button></div>
+        </div>
+        <div class="card span-5">
+          <h2>Правила</h2>
+          <div class="checklist">
+            <label class="check"><input type="checkbox" class="security-check"> Только нужные файлы.</label>
+            <label class="check"><input type="checkbox" class="security-check"> Нет EXE, DLL, BAT, CMD, PS1.</label>
+            <label class="check"><input type="checkbox" class="security-check"> Нет запроса seed-фразы.</label>
+            <label class="check"><input type="checkbox" class="security-check"> Внешние подключения перечислены.</label>
+            <label class="check"><input type="checkbox" class="security-check"> Права проверены.</label>
+          </div>
+          <div class="divider"></div>
+          <div class="statusbox warn">Самооценка, не сканирование.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-gamecard">
+      <div class="section-head"><div><h2>Карточка игры</h2><div class="muted">Все поля сохраняются локально.</div></div><span class="badge blue">Предпросмотр</span></div>
+      <div class="grid">
+        <div class="card span-7">
+          <input type="hidden" id="gameId" value="">
+          <div class="form-grid">
+            <div class="field full"><label for="gameTitle">Название *</label><input id="gameTitle" placeholder="Pixel Quest" maxlength="80"></div>
+            <div class="field"><label for="gameCategory">Категория</label><select id="gameCategory"><option>Аркада</option><option>Головоломка</option><option>Платформер</option><option>Стратегия</option><option>Экономическая</option><option>Карточная</option><option>RPG</option><option>Симулятор</option><option>Образовательная</option><option>Другое</option></select></div>
+            <div class="field"><label for="gamePlatform">Тип</label><select id="gamePlatform"><option>HTML5</option><option>Phaser</option><option>PixiJS</option><option>Three.js</option><option>WebGL</option><option>Другое</option></select></div>
+            <div class="field full"><label for="gameDescription">Описание *</label><textarea id="gameDescription" placeholder="Что делает игрок?" maxlength="500"></textarea></div>
+            <div class="field"><label for="gameVersion">Версия</label><input id="gameVersion" value="1.0.0" maxlength="30"></div>
+            <div class="field"><label for="gameLanguage">Язык</label><select id="gameLanguage"><option>Русский</option><option>English</option><option>Русский и English</option><option>Без текста</option></select></div>
+            <div class="field"><label for="gameAge">Возраст</label><select id="gameAge"><option>Для всех</option><option>6+</option><option>12+</option><option>16+</option><option>18+</option></select></div>
+            <div class="field"><label for="gameMonetization">Монетизация</label><select id="gameMonetization"><option>Бесплатно</option><option>Реклама</option><option>Покупки в игре</option><option>TON / NFT</option><option>Бесплатно + опции</option></select></div>
+            <div class="field full"><label for="gameCover">URL обложки</label><input id="gameCover" type="url" placeholder="https://…"></div>
+            <div class="field full"><label for="gameTags">Теги</label><input id="gameTags" placeholder="pixel art, casual" maxlength="180"></div>
+            <div class="field full"><label for="gameRules">Разрешения</label><textarea id="gameRules" placeholder="api.example.net для рекордов" maxlength="800"></textarea></div>
+            <div class="field full"><label for="gameSourceCode">HTML-код *</label><textarea id="gameSourceCode" spellcheck="false" placeholder="Загрузи .html или вставь код" style="min-height:190px;font:11px/1.45 ui-monospace,monospace"></textarea></div>
+          </div>
+          <div class="checklist" style="margin-top:14px">
+            <label class="check"><input type="checkbox" id="acceptRules"> Права на материалы и правила соблюдены.</label>
+            <label class="check"><input type="checkbox" id="privacyRules"> Сборы данных описаны, секреты не запрашиваются.</label>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="saveGameCard">Сохранить карточку</button>
+            <button class="btn" id="exportCard">JSON</button>
+            <button class="btn" id="clearGameCard">Очистить</button>
+          </div>
+          <div id="cardValidation" class="help"></div>
+        </div>
+        <div class="card span-5">
+          <h2>Предпросмотр</h2>
+          <div class="preview-card">
+            <div class="cover" id="previewCover">▣</div>
+            <div class="preview-body">
+              <h3 id="previewTitle">Название игры</h3>
+              <p id="previewDescription">Описание появится здесь.</p>
+              <div class="preview-meta">
+                <span id="previewCategory">Аркада</span>
+                <span id="previewPlatform">HTML5</span>
+                <span id="previewVersion">v1.0.0</span>
+                <span id="previewAge">Для всех</span>
+              </div>
+              <div class="preview-bottom">
+                <span id="previewDeveloper">Разработчик не указан</span>
+                <span class="badge warn">Не проверена</span>
+              </div>
+            </div>
+          </div>
+          <div class="actions"><button class="btn" id="previewReport">Пожаловаться</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-games">
+      <div class="section-head"><div><h2>Мои игры</h2><div class="muted">IndexedDB · не теряется после перезапуска.</div></div><span class="badge blue" id="gamesCount">0</span></div>
+      <div class="card">
+        <div class="row between" style="margin-bottom:12px">
+          <div class="row">
+            <button class="btn primary" id="newGameBtn">＋ Новая игра</button>
+            <button class="btn" id="refreshGamesBtn">↻ Обновить</button>
+          </div>
+          <span class="muted small">IndexedDB 'leafStudio/games'</span>
+        </div>
+        <div class="games-list" id="gamesList"></div>
+      </div>
+    </section>
+
+    <section class="section" id="section-security">
+      <div class="section-head"><div><h2>Безопасность</h2><div class="muted">Политика допуска.</div></div><span class="badge warn">План</span></div>
+      <div class="grid">
+        <div class="card span-6"><h2>Блокировать</h2><div class="checklist">
+          <label class="check"><input type="checkbox" checked disabled> EXE, DLL, BAT, CMD, PS1.</label>
+          <label class="check"><input type="checkbox" checked disabled> Пути за пределы папки.</label>
+          <label class="check"><input type="checkbox" checked disabled> Кража seed-фраз.</label>
+          <label class="check"><input type="checkbox" checked disabled> Обход sandbox.</label>
+        </div></div>
+        <div class="card span-6"><h2>Ручная проверка</h2><div class="checklist">
+          <label class="check"><input type="checkbox" checked disabled> Обфусцированный код.</label>
+          <label class="check"><input type="checkbox" checked disabled> Внешние API / WebSocket.</label>
+          <label class="check"><input type="checkbox" checked disabled> Кошельковые транзакции.</label>
+          <label class="check"><input type="checkbox" checked disabled> Камера / микрофон / гео.</label>
+        </div></div>
+        <div class="card span-12"><h2>Технические меры</h2><table class="table"><thead><tr><th>Мера</th><th>Назначение</th><th>Статус</th></tr></thead><tbody>
+          <tr><td>Отдельный origin</td><td>Изоляция сессии</td><td><span class="badge warn">Не подключено</span></td></tr>
+          <tr><td>iframe sandbox + CSP</td><td>Ограничение скриптов</td><td><span class="badge ok">В плеере</span></td></tr>
+          <tr><td>Антивирус</td><td>Сканирование архива</td><td><span class="badge warn">Не подключено</span></td></tr>
+          <tr><td>Хеш версии</td><td>Обнаружение подмены</td><td><span class="badge warn">Не подключено</span></td></tr>
+        </tbody></table></div>
+      </div>
+    </section>
+
+    <section class="section" id="section-versions">
+      <div class="section-head"><div><h2>Версии и публикация</h2><div class="muted">Локальный журнал.</div></div><span class="badge">Без сервера</span></div>
+      <div class="grid">
+        <div class="card span-7">
+          <h2>Текущая версия</h2>
+          <div id="versionSummary" class="statusbox">Карточка не сохранена.</div>
+          <div class="actions"><button class="btn primary" id="markReady">Проверить комплектность</button><button class="btn" id="exportAll">Экспорт данных</button></div>
+          <div id="readyReport" class="help"></div>
+        </div>
+        <div class="card span-5"><h2>План</h2><ol class="muted small" style="padding-left:18px;margin:0">
+          <li>Профиль и адрес.</li>
+          <li>Загрузка и сканирование.</li>
+          <li>Изолированная проверка.</li>
+          <li>Хеш версии.</li>
+          <li>Публикация URL.</li>
+          <li>Повторная проверка при обновлении.</li>
+        </ol><div class="statusbox warn" style="margin-top:12px">Публикация не подключена.</div></div>
+      </div>
+    </section>
+
+    <section class="section" id="section-data">
+      <div class="section-head"><div><h2>Перенос данных</h2><div class="muted">localStorage + IndexedDB + JSON.</div></div><span class="badge">Без облака</span></div>
+      <div class="grid">
+        <div class="card span-6">
+          <h2>Данные из конструктора</h2>
+          <div class="statusbox" id="bridgeDetails">Мост не найден.</div>
+          <div class="actions">
+            <button class="btn" id="refreshBridge2">Обновить</button>
+            <!-- [СИНХРОНИЗАЦИЯ] Ссылка на board.html -->
+            <a class="btn back-to-board" href="board12.html">▦ Борд</a>
+          </div>
+        </div>
+        <div class="card span-6">
+          <h2>Импорт / экспорт</h2>
+          <div class="row">
+            <button class="btn primary" id="exportAll2">Экспорт JSON</button>
+            <label class="btn" for="importJson">Импорт JSON</label>
+            <input class="hidden" type="file" id="importJson" accept="application/json,.json" style="display:none">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-online">
+      <div class="section-head"><div><h2>Онлайн-функции (заблокировано)</h2><div class="muted">Готовы к включению.</div></div><span class="badge warn" id="onlineModeBadge">ONLINE_MODE = false</span></div>
+      <div class="card">
+        <p class="muted small" style="margin-top:0">Все функции помечены <code class="code">// [ONLINE-HOOK]</code>. Включение — <code class="code">const ONLINE_MODE = true;</code> + указать <code class="code">API_BASE</code>.</p>
+        <div class="locked-section">
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>Сохранение проекта</strong><span>POST /projects</span><div class="toggle">// [ONLINE-HOOK] onlineApi.saveProject(payload)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>Публикация по URL</strong><span>POST /publish</span><div class="toggle">// [ONLINE-HOOK] onlineApi.publishProject(payload)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>TON Connect</strong><span>Подпись сообщения</span><div class="toggle">// [ONLINE-HOOK] tonConnect.signProof(message)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>Антивирус</strong><span>Сканирование ZIP/HTML</span><div class="toggle">// [ONLINE-HOOK] onlineApi.scanGame(file)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>Жалобы</strong><span>Очередь в БД</span><div class="toggle">// [ONLINE-HOOK] onlineApi.reportGame(gameId, reason)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>Аналитика</strong><span>События на сервер</span><div class="toggle">// [ONLINE-HOOK] onlineApi.recordEvent(type, detail)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>Медиатека</strong><span>Object storage</span><div class="toggle">// [ONLINE-HOOK] onlineApi.uploadMedia(file)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>Авторизация</strong><span>JWT HttpOnly</span><div class="toggle">// [ONLINE-HOOK] onlineApi.auth(login, password)</div></div><button class="btn small" disabled>Включить</button></div>
+          <div class="locked-item"><div class="lock-icon">🔒</div><div class="locked-info"><strong>TON Storage</strong><span>Манифест с CID</span><div class="toggle">// [ONLINE-HOOK] onlineApi.pinToTonStorage(manifest)</div></div><button class="btn small" disabled>Включить</button></div>
+        </div>
+        <div class="actions" style="margin-top:14px"><button class="btn" id="toggleOnlineBtn">Как включить</button></div>
+      </div>
+    </section>
+
+    <div class="foot">LEAF Studio · Этап 4 · локальный прототип</div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="modalTitle">Раздел</h2>
+    <p id="modalText"></p>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn" id="modalCancel">Закрыть</button>
+      <button class="btn primary" id="modalAction">Понятно</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* [ЭТАП 4] LEAF Studio — Панель разработчика.
+   Интеграция версий 3 (ONLINE_MODE, IndexedDB, дашборд) и 3.3 (черновики, LocalRepository, реестр).
+   Все «хвостики» помечены // [ONLINE-HOOK] и включаются флагом ONLINE_MODE.
+
+   [СИНХРОНИЗАЦИЯ] Переход в борд — файл board.html.
+*/
+(() => {
+'use strict';
+
+// === [ONLINE-HOOK] Флаг теста ↔ онлайна. ===
+const ONLINE_MODE = false;
+const API_BASE = 'https://api.leaf.studio';
+
+// === [ONLINE-HOOK] onlineApi — единая точка для будущих запросов. ===
+const onlineApi = {
+  async saveProfile(profile) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] PUT /me/profile */ return { ok:false }; },
+  async saveWallet(wallet) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] POST /me/wallet */ return { ok:false }; },
+  async saveGame(game) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] POST /me/games */ return { ok:false }; },
+  async publishGame(gameId) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] POST /me/games/:id/publish */ return { ok:false }; },
+  async scanGame(file) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] POST /scan */ return { ok:false }; },
+  async reportGame(gameId, reason) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] POST /reports */ return { ok:false }; },
+  async recordEvent(type, detail) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] POST /events */ return { ok:false }; },
+  async uploadMedia(file) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] upload */ return { ok:false }; },
+  async auth(login, password) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] POST /auth/login */ return { ok:false }; },
+  async pinToTonStorage(manifest) { if (!ONLINE_MODE) return { ok:false, reason:'offline' }; /* [ONLINE-HOOK] pin */ return { ok:false }; }
+};
+
+const $ = id => document.getElementById(id);
+const PROFILE_KEY='leafStudio.developer.v1';
+const WALLET_KEY='leafStudio.developerWallet.v1';
+const FILE_KEY='leafStudio.gameFileMeta.v1';
+const CARD_KEY='leafStudio.gameCard.v1';
+const BRIDGE_KEY='leafStudio.boardBridge.v1';
+const GAMES_DB='leafStudio';
+const GAMES_STORE='games';
+const PROFILE_DRAFT_KEY='leafStudio.developer.profileDraft.v1';
+const CARD_DRAFT_KEY='leafStudio.developer.cardDraft.v1';
+const WALLET_DRAFT_KEY='leafStudio.developer.walletDraft.v1';
+const UPLOAD_DRAFT_KEY='leafStudio.developer.uploadDraft.v1';
+const DATA_MODE='local';
+
+// [СИНХРОНИЗАЦИЯ] Файл борда — board.html
+const BOARD_PAGE = 'board.html';
+
+// [ЭТАП 4] LocalRepository — контракт, чтобы можно было заменить на OnlineRepository.
+const LocalRepository = {
+  get: (key, fallback={}) => read(key, fallback),
+  set: (key, value) => write(key, value)
+};
+/* FUTURE ONLINE ADAPTER (оставлен выключенным):
+const OnlineRepository = {
+  async get(path){ return fetch(`${API_BASE}${path}`, {credentials:'include'}).then(r=>r.json()); },
+  async set(path,payload){ return fetch(`${API_BASE}${path}`, {method:'PUT', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}).then(r=>r.json()); }
+};
+Не активировать без HTTPS, серверной авторизации, валидации, лимитов и CSRF.
+*/
+
+let selectedFile = null;
+let currentGames = [];
+
+function toast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+function read(key,fallback={}){try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback))}catch(_){return fallback}}
+function write(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true}catch(e){toast('Не удалось сохранить: хранилище переполнено');return false}}
+function escapeHTML(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function countWord(n,one,two,five){const x=Math.abs(n)%100,y=x%10;return x>10&&x<20?five:y>1&&y<5?two:y===1?one:five}
+function download(name,data){
+  const blob=new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+/* === Навигация === */
+function showSection(name){
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='section-'+name));
+  document.querySelectorAll('[data-section]').forEach(b=>b.classList.toggle('active',b.dataset.section===name));
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='games') refreshGames();
+}
+document.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>showSection(b.dataset.section)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>showSection(b.dataset.go)));
+
+/* === Мост с бордом === */
+function refreshBridge(){
+  const b = read(BRIDGE_KEY, null);
+  if(!b){
+    $('boardProjectName').textContent='Информация ещё не получена.';
+    $('boardProjectInfo').textContent='Открой эту страницу из меню «Мой профиль → Панель разработчика».';
+    $('bridgeDetails').textContent='Мост не найден.';
+    return;
+  }
+  $('boardProjectName').textContent=b.projectName||'Без названия';
+  $('boardProjectInfo').textContent=`Тип: ${b.projectType||'—'} · Объектов: ${b.objectCount??'—'} · Передано: ${b.updatedAt||'—'}`;
+  $('bridgeDetails').textContent=JSON.stringify(b,null,2);
+}
+
+/* === IndexedDB === */
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('IndexedDB not supported'));return;}
+    const req = indexedDB.open(GAMES_DB, 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if(!db.objectStoreNames.contains(GAMES_STORE)){
+        const store = db.createObjectStore(GAMES_STORE, {keyPath:'id'});
+        store.createIndex('updatedAt','updatedAt');
+        store.createIndex('title','title');
+      }
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function dbGetAll(){
+  try{
+    const db=await openDB();
+    return await new Promise((res,rej)=>{
+      const tx=db.transaction(GAMES_STORE,'readonly');
+      const req=tx.objectStore(GAMES_STORE).getAll();
+      req.onsuccess=()=>res(req.result||[]);
+      req.onerror=()=>rej(req.error);
+    });
+  }catch(_){return []}
+}
+async function dbPut(game){
+  const db=await openDB();
+  return await new Promise((res,rej)=>{
+    const tx=db.transaction(GAMES_STORE,'readwrite');
+    const req=tx.objectStore(GAMES_STORE).put(game);
+    req.onsuccess=()=>res(true);
+    req.onerror=()=>rej(req.error);
+  });
+}
+async function dbDelete(id){
+  const db=await openDB();
+  return await new Promise((res,rej)=>{
+    const tx=db.transaction(GAMES_STORE,'readwrite');
+    const req=tx.objectStore(GAMES_STORE).delete(id);
+    req.onsuccess=()=>res(true);
+    req.onerror=()=>rej(req.error);
+  });
+}
+
+/* === Профиль === */
+function profileFromForm(){
+  return {
+    name:$('devName').value.trim(),
+    handle:$('devHandle').value.trim(),
+    email:$('devEmail').value.trim(),
+    site:$('devSite').value.trim(),
+    bio:$('devBio').value.trim(),
+    country:$('devCountry').value.trim(),
+    role:$('devRole').value,
+    updatedAt:new Date().toISOString()
+  };
+}
+function fillProfile(p){
+  const map={devName:'name',devHandle:'handle',devEmail:'email',devSite:'site',devBio:'bio',devCountry:'country',devRole:'role'};
+  for(const [id,key] of Object.entries(map)) if(p[key]!==undefined) $(id).value=p[key];
+}
+function saveProfile(){
+  const p=profileFromForm();
+  if(!p.name){toast('Заполни имя студии');return;}
+  if(p.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email)){toast('Проверь email');return;}
+  write(PROFILE_KEY,p);
+  write(PROFILE_DRAFT_KEY,p);
+  onlineApi.saveProfile(p).catch(()=>{});
+  updateDashboard();
+  toast('Профиль сохранён локально');
+}
+$('saveAccount').addEventListener('click',saveProfile);
+$('clearAccount').addEventListener('click',()=>{
+  if(!confirm('Очистить форму?')) return;
+  document.querySelectorAll('#section-account input,#section-account textarea').forEach(x=>x.value='');
+  localStorage.removeItem(PROFILE_DRAFT_KEY);
+});
+
+/* === Кошелёк === */
+function saveWallet(){
+  const address=$('walletAddress').value.trim();
+  if(address && !/^(EQ|UQ|0:)[A-Za-z0-9_:\-]{20,}$/.test(address)){
+    toast('Адрес выглядит необычно. Это не полноценная валидация.');
+    return;
+  }
+  if(address && (!$('walletDisclosure').checked || !$('walletTerms').checked)){
+    toast('Подтверди оба чекбокса');
+    return;
+  }
+  const wallet={
+    address, purpose:$('walletPurpose').value,
+    disclosed:$('walletDisclosure').checked,
+    understandsVerification:$('walletTerms').checked,
+    updatedAt:new Date().toISOString()
+  };
+  write(WALLET_KEY,wallet);
+  write(WALLET_DRAFT_KEY,wallet);
+  onlineApi.saveWallet(wallet).catch(()=>{});
+  updateDashboard();
+  toast(address?'Адрес сохранён':'Адрес очищен');
+}
+$('saveWallet').addEventListener('click',saveWallet);
+$('clearWallet').addEventListener('click',()=>{
+  $('walletAddress').value='';
+  $('walletDisclosure').checked=false;
+  $('walletTerms').checked=false;
+  write(WALLET_KEY,{});
+  localStorage.removeItem(WALLET_DRAFT_KEY);
+  updateDashboard();
+  toast('Адрес удалён');
+});
+
+/* === Файл игры === */
+$('gameFile').addEventListener('change', async e=>{
+  selectedFile = e.target.files?.[0] || null;
+  renderFileInfo();
+  if(!selectedFile) return;
+  const ext=selectedFile.name.split('.').pop().toLowerCase();
+  if(['html','htm'].includes(ext)){
+    if(selectedFile.size>500000){toast('HTML больше 500 КБ для локального импорта');return;}
+    try{
+      $('gameSourceCode').value = await selectedFile.text();
+      if(!$('gameTitle').value.trim()) $('gameTitle').value = selectedFile.name.replace(/\.html?$/i,'');
+      renderCard();
+      toast('HTML загружен в карточку.');
+    }catch(_){toast('Не удалось прочитать HTML');}
+  } else if(ext==='zip'){
+    toast('ZIP выбран. Архив не распаковывается.');
+  }
+});
+function renderFileInfo(){
+  if(!selectedFile){$('fileInfo').textContent='Файл не выбран.';return;}
+  const ext=selectedFile.name.split('.').pop().toLowerCase();
+  const ok=['html','htm','zip'].includes(ext);
+  $('fileInfo').innerHTML = `<strong>${escapeHTML(selectedFile.name)}</strong><br>${(selectedFile.size/1024/1024).toFixed(2)} МБ · ${escapeHTML(selectedFile.type||'—')}<br><span class="badge ${ok?'blue':'warn'}">${ok?'Допустимо':'Неподдерживаемое'}</span>`;
+}
+$('rememberFile').addEventListener('click',()=>{
+  if(!selectedFile){toast('Сначала выбери файл');return;}
+  const ext=selectedFile.name.split('.').pop().toLowerCase();
+  if(!['html','htm','zip'].includes(ext)){toast('Разрешены .html, .htm, .zip');return;}
+  if(selectedFile.size>100*1024*1024){toast('Файл больше 100 МБ');return;}
+  const meta={
+    name:selectedFile.name, size:selectedFile.size, type:selectedFile.type,
+    entryFile:$('entryFile').value.trim()||'index.html',
+    lastModified:selectedFile.lastModified,
+    recordedAt:new Date().toISOString(),
+    status:'metadata_only_not_uploaded'
+  };
+  write(FILE_KEY,meta);
+  write(UPLOAD_DRAFT_KEY,{entryFile:$('entryFile').value,securityChecks:Array.from(document.querySelectorAll('.security-check')).map(x=>x.checked),meta});
+  updateDashboard();
+  toast('Сведения сохранены');
+});
+$('forgetFile').addEventListener('click',()=>{
+  $('gameFile').value='';
+  selectedFile=null;
+  localStorage.removeItem(FILE_KEY);
+  renderFileInfo();
+  updateDashboard();
+  toast('Файл сброшен');
+});
+
+/* === Карточка === */
+function cardFromForm(){
+  return {
+    id:$('gameId').value||undefined,
+    title:$('gameTitle').value.trim(),
+    category:$('gameCategory').value,
+    platform:$('gamePlatform').value,
+    description:$('gameDescription').value.trim(),
+    version:$('gameVersion').value.trim()||'1.0.0',
+    language:$('gameLanguage').value,
+    age:$('gameAge').value,
+    monetization:$('gameMonetization').value,
+    cover:$('gameCover').value.trim(),
+    tags:$('gameTags').value.split(',').map(x=>x.trim()).filter(Boolean),
+    permissions:$('gameRules').value.trim(),
+    htmlCode:$('gameSourceCode').value,
+    acceptedRules:$('acceptRules').checked,
+    privacyDisclosure:$('privacyRules').checked,
+    updatedAt:new Date().toISOString()
+  };
+}
+function fillCard(c){
+  $('gameId').value=c.id||'';
+  const map={gameTitle:'title',gameCategory:'category',gamePlatform:'platform',gameDescription:'description',gameVersion:'version',gameLanguage:'language',gameAge:'age',gameMonetization:'monetization',gameCover:'cover',gameRules:'permissions',gameSourceCode:'htmlCode'};
+  for(const [id,key] of Object.entries(map)) if(c[key]!==undefined) $(id).value=c[key];
+  if(c.tags) $('gameTags').value=c.tags.join(', ');
+  $('acceptRules').checked=!!c.acceptedRules;
+  $('privacyRules').checked=!!c.privacyDisclosure;
+  renderCard();
+}
+function renderCard(){
+  const c=cardFromForm(), p=read(PROFILE_KEY,{});
+  $('previewTitle').textContent=c.title||'Название игры';
+  $('previewDescription').textContent=c.description||'Описание появится здесь.';
+  $('previewCategory').textContent=c.category;
+  $('previewPlatform').textContent=c.platform;
+  $('previewVersion').textContent='v'+(c.version||'1.0.0');
+  $('previewAge').textContent=c.age;
+  $('previewDeveloper').textContent=p.name||p.handle||'Разработчик не указан';
+  const cover=$('previewCover');
+  cover.style.backgroundImage=''; cover.style.backgroundSize='cover'; cover.style.backgroundPosition='center';
+  if(c.cover){
+    try{
+      const u=new URL(c.cover);
+      if(['http:','https:'].includes(u.protocol)){
+        cover.style.backgroundImage=`linear-gradient(#0001,#0001),url("${u.href.replace(/["\\]/g,'')}")`;
+        cover.textContent='';
+      } else { cover.textContent='▣'; }
+    }catch(_){ cover.textContent='▣'; }
+  } else cover.textContent='▣';
+  const valid = !!c.title && !!c.description && c.acceptedRules && c.privacyDisclosure;
+  $('cardValidation').textContent = valid
+    ? 'Минимальные поля заполнены. Остаётся черновиком до серверной проверки.'
+    : 'Нужны название, описание, правила и раскрытие данных.';
+  $('cardValidation').style.color = valid ? '' : 'var(--danger)';
+  return c;
+}
+['gameTitle','gameCategory','gamePlatform','gameDescription','gameVersion','gameLanguage','gameAge','gameMonetization','gameCover','gameTags','gameRules','gameSourceCode','acceptRules','privacyRules'].forEach(id=>{
+  const el=$(id); if(!el) return;
+  ['input','change'].forEach(evt=>el.addEventListener(evt,()=>{saveFormDraft(CARD_DRAFT_KEY,cardFromForm);renderCard();}));
+});
+function saveFormDraft(key,collect){try{return write(key,collect())}catch(_){return false}}
+
+/* === Сохранение игры в IndexedDB === */
+async function saveGameToLibrary(card){
+  if(!card.htmlCode || !card.htmlCode.trim()) return null;
+  const id = card.id || ('game_' + card.title.toLowerCase().replace(/[^a-z0-9а-яё]+/gi,'-').replace(/^-|-$/g,'').slice(0,42) + '_' + Date.now().toString(36));
+  const game = {
+    id,
+    title: card.title, category: card.category, platform: card.platform,
+    description: card.description, version: card.version || '1.0.0',
+    language: card.language, age: card.age, monetization: card.monetization,
+    cover: card.cover || '', tags: card.tags || [], permissions: card.permissions || '',
+    developer: read(PROFILE_KEY,{}).name || read(PROFILE_KEY,{}).handle || 'Разработчик',
+    wallet: read(WALLET_KEY,{}).address || '',
+    htmlCode: card.htmlCode,
+    acceptedRules: card.acceptedRules, privacyDisclosure: card.privacyDisclosure,
+    status: 'draft_local',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  await dbPut(game);
+  onlineApi.saveGame(game).catch(()=>{});
+  return game;
+}
+$('saveGameCard').addEventListener('click', async ()=>{
+  const c = renderCard();
+  if(!c.title || !c.description){toast('Заполни название и описание');return;}
+  write(CARD_KEY,c);
+  write(CARD_DRAFT_KEY,c);
+  const game = await saveGameToLibrary(c);
+  updateDashboard();
+  await refreshGames();
+  await renderDeveloperGames();
+  toast(game
+    ? 'Карточка сохранена. Игра в «Мои игры» и в борде.'
+    : 'Карточка сохранена. Добавь HTML-код, чтобы игра появилась в борде.');
+});
+$('exportCard').addEventListener('click',()=>download('leaf-game-card.json',renderCard()));
+$('clearGameCard').addEventListener('click',()=>{
+  if(!confirm('Очистить карточку?')) return;
+  document.querySelectorAll('#section-gamecard input:not([type=checkbox]),#section-gamecard textarea').forEach(x=>x.value='');
+  $('gameId').value='';
+  $('gameVersion').value='1.0.0';
+  $('gameCategory').value='Аркада';
+  $('gamePlatform').value='HTML5';
+  $('gameLanguage').value='Русский';
+  $('gameAge').value='Для всех';
+  $('gameMonetization').value='Бесплатно';
+  $('acceptRules').checked=false;
+  $('privacyRules').checked=false;
+  localStorage.removeItem(CARD_DRAFT_KEY);
+  renderCard();
+});
+
+/* === Мои игры (IndexedDB) === */
+async function refreshGames(){
+  currentGames = await dbGetAll();
+  currentGames.sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+  $('gamesCount').textContent = String(currentGames.length);
+  $('stepGames').innerHTML = `<span class="badge ${currentGames.length?'blue':''}">${currentGames.length} игр</span>`;
+  const list=$('gamesList');
+  if(!currentGames.length){
+    list.innerHTML = '<div class="statusbox">Пока нет сохранённых игр.</div>';
+    return;
+  }
+  list.innerHTML = currentGames.map(g=>{
+    const cover = g.cover ? `<img src="${escapeHTML(g.cover)}" alt="">` : '▣';
+    const statusLabel = ({draft_local:'Черновик', pending_review:'На модерации', published:'Опубликовано'})[g.status] || g.status;
+    const statusClass = g.status==='published'?'ok':(g.status==='pending_review'?'warn':'');
+    return `<div class="game-item" data-game-id="${escapeHTML(g.id)}">
+      <div class="thumb">${cover}</div>
+      <div class="info">
+        <h4>${escapeHTML(g.title||'Без названия')}</h4>
+        <div class="meta">
+          <span>${escapeHTML(g.category||'')}</span>
+          <span>·</span>
+          <span>v${escapeHTML(g.version||'1.0.0')}</span>
+          <span class="badge ${statusClass}">${statusLabel}</span>
+          <span>· ${escapeHTML((g.updatedAt||'').slice(0,10))}</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn small" data-edit-game="${escapeHTML(g.id)}">✎ Ред.</button>
+        <button class="btn small" data-insert-game="${escapeHTML(g.id)}">▦ В борд</button>
+        <button class="btn small danger" data-delete-game="${escapeHTML(g.id)}">⌫</button>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-edit-game]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const g=currentGames.find(x=>x.id===btn.dataset.editGame);
+      if(!g) return;
+      fillCard(g);
+      showSection('gamecard');
+      toast('Игра загружена в карточку');
+    });
+  });
+  list.querySelectorAll('[data-insert-game]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const g=currentGames.find(x=>x.id===btn.dataset.insertGame);
+      if(!g) return;
+      // [СИНХРОНИЗАЦИЯ] Передаём игру через lastGameToInsert.v1 — борд подхватит и вставит.
+      try{ localStorage.setItem('leafStudio.lastGameToInsert.v1', JSON.stringify({id:g.id,title:g.title,at:new Date().toISOString()})); }catch(_){}
+      toast('Игра отмечена. Переход в борд...');
+      setTimeout(()=>{ window.location.href = new URL(BOARD_PAGE, window.location.href).href; }, 600);
+    });
+  });
+  list.querySelectorAll('[data-delete-game]').forEach(btn=>{
+    btn.addEventListener('click',async ()=>{
+      const id=btn.dataset.deleteGame;
+      const g=currentGames.find(x=>x.id===id);
+      if(!g) return;
+      if(!confirm(`Удалить игру «${g.title}»?`)) return;
+      await dbDelete(id);
+      await refreshGames();
+      await renderDeveloperGames();
+      updateDashboard();
+      toast('Игра удалена');
+    });
+  });
+}
+$('refreshGamesBtn').addEventListener('click',refreshGames);
+$('newGameBtn').addEventListener('click',()=>{ showSection('gamecard'); });
+
+/* === Реестр в обзоре (localStorage GAMES_KEY) === */
+const GAMES_KEY='leafStudio.developerGames.v1';
+async function renderDeveloperGames(){
+  const list=$('developerGamesList');if(!list)return;
+  const dbGames=await dbGetAll();
+  const legacy=read(GAMES_KEY,[]).filter(g=>g&&typeof g==='object'&&g.id);
+  const merged=[...dbGames];
+  legacy.forEach(g=>{ if(!merged.find(x=>x.id===g.id)) merged.push(g); });
+  $('developerGamesCount').textContent=merged.length+' '+countWord(merged.length,'игра','игры','игр');
+  if(!merged.length){
+    list.innerHTML='<div class="statusbox span-12">Пока нет сохранённых игр.</div>';
+    return;
+  }
+  list.innerHTML='';
+  [...merged].reverse().forEach(g=>{
+    const item=document.createElement('article');
+    item.className='game-library-item span-4';
+    item.style.cssText='border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel)';
+    const title=document.createElement('h3');title.textContent=g.title||'Без названия';title.style.cssText='font-size:14px;margin:0 0 5px;overflow-wrap:anywhere';
+    const desc=document.createElement('p');desc.textContent=(g.description||'Без описания').slice(0,180);desc.style.cssText='font-size:12px;color:var(--muted);overflow-wrap:anywhere';
+    const meta=document.createElement('div');meta.className='row';meta.innerHTML='<span class="badge blue">'+escapeHTML(g.platform||'HTML5')+'</span> <span class="badge">v'+escapeHTML(g.version||'1.0.0')+'</span> <span class="badge">'+(g.htmlCode?'HTML-код есть':'Только карточка')+'</span>';
+    const status=document.createElement('div');status.className='draft-indicator';status.style.cssText='font-size:11px;color:var(--muted);margin-top:8px';status.textContent='Статус: '+(g.status||'draft_local')+' · '+(g.updatedAt?new Date(g.updatedAt).toLocaleString():'—');
+    const actions=document.createElement('div');actions.className='actions';actions.style.cssText='margin-top:10px;display:flex;gap:6px;flex-wrap:wrap';
+    const edit=document.createElement('button');edit.className='btn small';edit.textContent='Редактировать';
+    edit.addEventListener('click',()=>{fillCard({...g,tags:g.tags||[],acceptedRules:g.acceptedRules,privacyDisclosure:g.privacyDisclosure});showSection('gamecard');toast('Загружено в форму');});
+    const exportBtn=document.createElement('button');exportBtn.className='btn small';exportBtn.textContent='JSON';
+    exportBtn.addEventListener('click',()=>download('leaf-game-'+String(g.title||'game').replace(/[^a-z0-9а-яё_-]/gi,'_')+'.json',g));
+    const remove=document.createElement('button');remove.className='btn small';remove.textContent='Удалить';
+    remove.addEventListener('click',async ()=>{if(!confirm('Удалить «'+(g.title||'игра')+'»?'))return;await dbDelete(g.id);write(GAMES_KEY,legacy.filter(x=>x.id!==g.id));await refreshGames();await renderDeveloperGames();updateDashboard();toast('Удалено');});
+    actions.append(edit,exportBtn,remove);
+    item.append(title,desc,meta,status,actions);
+    list.appendChild(item);
+  });
+}
+$('refreshDeveloperGames')?.addEventListener('click',renderDeveloperGames);
+$('exportGamesJson')?.addEventListener('click',async ()=>{const games=await dbGetAll();download('leaf-developer-games.json',games);});
+
+/* === Дашборд === */
+function updateDashboard(){
+  const p=read(PROFILE_KEY,{}), w=read(WALLET_KEY,{}), f=read(FILE_KEY,{}), c=read(CARD_KEY,{});
+  $('metricProfile').textContent=p.name?'Заполнен':'Не заполнен';
+  $('metricWallet').textContent=w.address?'Указан':'Не привязан';
+  $('metricFile').textContent=f.name?'Выбран':'Не загружен';
+  const fields=[!!p.name,!!w.address,!!f.name,!!c.title&&!!c.description];
+  $('metricReady').textContent=Math.round(fields.filter(Boolean).length/fields.length*100)+'%';
+  $('stepAccount').innerHTML=`<span class="badge ${p.name?'blue':''}">${p.name?'Сохранён':'Не заполнен'}</span>`;
+  $('stepWallet').innerHTML=`<span class="badge ${w.address?'blue':''}">${w.address?'Адрес указан':'Не привязан'}</span>`;
+  $('stepUpload').innerHTML=`<span class="badge ${f.name?'blue':''}">${f.name?'Файл выбран':'Не загружен'}</span>`;
+  $('stepCard').innerHTML=`<span class="badge ${c.title?'blue':''}">${c.title?'Черновик сохранён':'Черновик'}</span>`;
+  $('walletStatus').textContent=w.address?`Публичный адрес: ${w.address} · владение не подтверждено.`:'Адрес не сохранён.';
+  $('versionSummary').textContent=c.title
+    ? `Черновик «${c.title}», версия ${c.version||'1.0.0'}.`
+    : 'Карточка не сохранена.';
+  const ready=[p.name,w.address,f.name,c.title,c.description,c.acceptedRules,c.privacyDisclosure].filter(Boolean).length;
+  $('readyReport').textContent=`Заполнено ${ready} из 7 пунктов.`;
+  $('modeBadge').textContent = ONLINE_MODE ? 'Онлайн' : 'Локальный прототип';
+  $('onlineModeBadge').textContent = 'ONLINE_MODE = ' + String(ONLINE_MODE);
+}
+
+/* === Экспорт / импорт === */
+async function exportAll(){
+  const games=await dbGetAll();
+  const payload={
+    format:'leaf-developer-export-v3',
+    exportedAt:new Date().toISOString(),
+    profile:read(PROFILE_KEY,{}),
+    wallet:read(WALLET_KEY,{}),
+    gameFile:read(FILE_KEY,{}),
+    gameCard:read(CARD_KEY,{}),
+    games,
+    boardBridge:read(BRIDGE_KEY,{}),
+    dataMode:DATA_MODE
+  };
+  download('leaf-developer-project.json',payload);
+}
+$('exportAll').addEventListener('click',exportAll);
+$('exportAll2').addEventListener('click',exportAll);
+$('markReady').addEventListener('click',()=>{updateDashboard();showSection('overview');toast('Комплектность обновлена');});
+$('refreshBridge').addEventListener('click',refreshBridge);
+$('refreshBridge2').addEventListener('click',refreshBridge);
+
+$('importJson').addEventListener('change', async e=>{
+  const f=e.target.files?.[0]; if(!f) return;
+  try{
+    const data=JSON.parse(await f.text());
+    if(!confirm('Импортировать данные из JSON?')) return;
+    if(data.profile) write(PROFILE_KEY,data.profile);
+    if(data.wallet) write(WALLET_KEY,data.wallet);
+    if(data.gameFile) write(FILE_KEY,data.gameFile);
+    if(data.gameCard) write(CARD_KEY,data.gameCard);
+    if(Array.isArray(data.games)){
+      for(const g of data.games){ if(g && g.id){ try{ await dbPut(g); }catch(_){} } }
+    }
+    fillProfile(read(PROFILE_KEY,{}));
+    $('walletAddress').value=read(WALLET_KEY,{}).address||'';
+    fillCard(read(CARD_KEY,{}));
+    await refreshGames();
+    await renderDeveloperGames();
+    updateDashboard();
+    toast('Импортировано');
+  }catch(_){toast('Не удалось прочитать JSON')}
+  e.target.value='';
+});
+
+/* === Онлайн-функции === */
+$('toggleOnlineBtn').addEventListener('click',()=>{
+  showModal(
+    'Как включить онлайн-режим',
+    'Все онлайн-функции — заглушки.',
+    `<ol style="padding-left:18px;margin:0;font-size:13px;line-height:1.7">
+      <li>Открой файл в редакторе.</li>
+      <li>Найди <code class="code">const ONLINE_MODE = false;</code></li>
+      <li>Замени на <code class="code">true</code>.</li>
+      <li>Укажи свой адрес в <code class="code">const API_BASE = '...';</code></li>
+      <li>Раскомментируй <code class="code">fetch</code> в <code class="code">onlineApi.*</code>.</li>
+      <li>Настрой сервер: POST /projects, /me/games, /publish, /events, /scan, /reports, PUT /me/profile, POST /me/wallet, /auth/login.</li>
+    </ol>`,
+    'Понятно'
+  );
+});
+function showModal(title,text,bodyHTML,actionLabel='Понятно'){
+  $('modalTitle').textContent=title;
+  $('modalText').textContent=text;
+  $('modalBody').innerHTML=bodyHTML||'';
+  $('modalAction').textContent=actionLabel;
+  $('modalBackdrop').classList.add('open');
+}
+$('modalAction').addEventListener('click',()=>$('modalBackdrop').classList.remove('open'));
+$('modalCancel').addEventListener('click',()=>$('modalBackdrop').classList.remove('open'));
+$('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))$('modalBackdrop').classList.remove('open');});
+
+/* === Тема === */
+$('themeBtn').addEventListener('click',()=>{
+  document.body.classList.toggle('dark');
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.content=document.body.classList.contains('dark')?'#17212b':'#3390ec';
+  write('leafStudio.devTheme.v1',{theme:document.body.classList.contains('dark')?'dark':'light'});
+});
+if(read('leafStudio.devTheme.v1',{}).theme==='dark') document.body.classList.add('dark');
+
+/* === Переход в борд (board.html) === */
+document.querySelectorAll('.back-to-board').forEach(link=>{
+  if(link.tagName==='A'){
+    link.addEventListener('click',e=>{
+      e.preventDefault();
+      try{ window.location.href=new URL(BOARD_PAGE,window.location.href).href; }
+      catch(_){ window.location.href=BOARD_PAGE; }
+    });
+  }
+});
+
+/* === Ctrl/Cmd+S === */
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.key.toLowerCase()!=='s') return;
+  e.preventDefault();
+  const active=document.querySelector('.section.active')?.id;
+  const action={'section-account':'saveAccount','section-wallet':'saveWallet','section-upload':'rememberFile','section-gamecard':'saveGameCard'}[active];
+  if(action){$(action)?.click();return;}
+  if(active==='section-data'){exportAll();return;}
+  toast('Выбери раздел для сохранения');
+});
+
+/* === Запуск === */
+(async ()=>{
+  const savedProfile=read(PROFILE_KEY,{}),profileDraft=read(PROFILE_DRAFT_KEY,{});
+  fillProfile({...savedProfile,...profileDraft});
+  const savedWallet=read(WALLET_KEY,{}),walletDraft=read(WALLET_DRAFT_KEY,{}),w={...savedWallet,...walletDraft};
+  $('walletAddress').value=w.address||'';
+  $('walletPurpose').value=w.purpose||'developer';
+  $('walletDisclosure').checked=!!w.disclosed;
+  $('walletTerms').checked=!!w.understandsVerification;
+  const savedCard=read(CARD_KEY,{}),cardDraft=read(CARD_DRAFT_KEY,{});
+  if(savedCard.title||savedCard.description||cardDraft.title||cardDraft.description) fillCard({...savedCard,...cardDraft});
+  const fileMeta=read(FILE_KEY,{}),uploadDraft=read(UPLOAD_DRAFT_KEY,{});
+  if(uploadDraft.entryFile)$('entryFile').value=uploadDraft.entryFile;
+  if(Array.isArray(uploadDraft.securityChecks))document.querySelectorAll('.security-check').forEach((el,i)=>el.checked=!!uploadDraft.securityChecks[i]);
+  if(fileMeta.name)$('fileInfo').innerHTML=`<strong>${escapeHTML(fileMeta.name)}</strong><br>${(fileMeta.size/1024/1024).toFixed(2)} МБ<br><span class="badge warn">Метаданные сохранены; файл нужно выбрать заново</span>`;
+  await refreshGames();
+  await renderDeveloperGames();
+  refreshBridge();
+  updateDashboard();
+})();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2105 @@
+<!doctype html>
+<!--
+LEAF Studio — Telegram Edition 5.4 · ЭТАП 4.2
+Изменения 4.2 (6 пунктов):
+1) Нижняя панель в стиле Photoshop: группы, разделители, подписи, скролл, collapse.
+2) Иконка «Пользователь» перенесена в нижнюю панель (слева).
+3) Верхняя шапка удалена полностью.
+4) Информация из шапки перенесена в правую панель «Проект».
+5) Левый toolrail удалён — инструменты в доке и правой панели.
+6) Крупные векторные иконки (inline SVG, Feather/Lucide-стиль).
+[ONLINE-HOOK] ONLINE_MODE = false.
+-->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3390ec">
+<title>LEAF Studio — Telegram Edition 5.4</title>
+<style>
+/* ===== Telegram tokens ===== */
+:root{
+  --tg-blue:#3390ec;--tg-blue-hover:#2481d2;--tg-blue-soft:#e5f1fc;--tg-blue-soft-border:#c6e1fa;--tg-blue-text:#1768ad;
+  --bg:#f2f5f2;--panel:#fff;--panel2:#f4f6f8;--panel3:#eef3f8;
+  --text:#1f2a20;--muted:#7b8794;--line:#e7ece6;--line-strong:#d9e0e8;
+  --radius-sm:8px;--radius:12px;--radius-lg:16px;
+  --shadow-pop:0 12px 32px rgba(15,25,40,.14),0 2px 6px rgba(15,25,40,.06);
+  --shadow-modal:0 24px 60px rgba(15,25,40,.22);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  --ruler-w:24px;--ruler-h:22px;
+  --dock-icon:22px;
+}
+body.dark{
+  --bg:#0f1418;--panel:#17212b;--panel2:#1f2c39;--panel3:#22303e;--text:#e8eef5;--muted:#8fa3b8;
+  --line:#22303e;--line-strong:#2b3a4b;
+  --tg-blue-soft:#1c3a5c;--tg-blue-soft-border:#2d5580;--tg-blue-text:#91c8ff;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;width:100%;height:100%;font:14px/1.45 var(--font);color:var(--text);background:var(--bg);
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;
+}
+::selection{background:transparent;color:inherit}
+input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
+input::selection,textarea::selection{background:var(--tg-blue-soft);color:var(--tg-blue-text)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{border:0;cursor:pointer;background:transparent;color:inherit;transition:background-color .14s,color .14s,transform .14s}
+button:active{transform:translateY(1px)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--tg-blue);outline-offset:2px}
+a{color:var(--tg-blue);text-decoration:none}
+svg{display:block;flex-shrink:0}
+
+.app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ===== Основная сетка: без левого тулбара (п.5) ===== */
+.main{display:grid;grid-template-columns:minmax(0,1fr);flex:1;min-height:0;position:relative}
+.workspace{min-width:0;min-height:0;display:flex;flex-direction:column;position:relative}
+.workspace-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:0;flex:1}
+
+/* ===== Холст с линейками ===== */
+.canvas-wrap{
+  min-width:0;min-height:0;position:relative;overflow:auto;padding:0;
+  background-color:#eef2f7;background-image:radial-gradient(#cdd6e0 0.8px,transparent .8px);background-size:16px 16px;
+  scrollbar-gutter:stable;overscroll-behavior:contain;touch-action:pan-x pan-y;
+}
+.canvas-wrap.preview{background:#fff;background-image:none}
+.stage-shell{position:relative;margin:0 auto 22px;background:#fff;box-shadow:0 2px 12px rgba(15,25,40,.08);border-radius:var(--radius-sm)}
+.stage-top{height:26px;position:sticky;top:0;z-index:4;display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:var(--panel2);color:var(--muted);font-size:10px;letter-spacing:.3px;border-bottom:1px solid var(--line);font-family:ui-monospace,monospace}
+.stage{position:relative;overflow:hidden;background:#fff;isolation:isolate}
+.stage.grid-on{background-image:linear-gradient(#b8c3b533 1px,transparent 1px),linear-gradient(90deg,#b8c3b533 1px,transparent 1px);background-size:20px 20px}
+
+.ruler-wrap{position:relative;display:none}
+.canvas-wrap.show-rulers .ruler-wrap{display:block}
+.site-ruler{
+  position:sticky;top:0;z-index:7;height:var(--ruler-h);
+  background:#f8fafc;border-bottom:1px solid var(--line-strong);
+  color:var(--muted);font:9px/var(--ruler-h) ui-monospace,monospace;
+  overflow:hidden;white-space:nowrap;display:flex;align-items:flex-end;padding-bottom:2px;
+  background-image:repeating-linear-gradient(90deg,transparent 0 9px,#c5cec1 9px 10px,transparent 10px 49px,#98a591 49px 50px);
+  background-position:0 100%;background-repeat:repeat-x;background-size:auto calc(var(--ruler-h) - 6px);
+}
+.site-ruler .ruler-inner{display:flex;min-width:100%}
+.site-ruler span{display:inline-block;min-width:50px;padding-left:4px;flex:0 0 50px}
+.side-ruler{
+  position:sticky;left:0;float:left;width:var(--ruler-w);height:100%;min-height:100%;
+  background:#f8fafc;border-right:1px solid var(--line-strong);
+  color:var(--muted);font:9px/20px ui-monospace,monospace;overflow:hidden;z-index:6;
+  background-image:repeating-linear-gradient(180deg,transparent 0 9px,#c5cec1 9px 10px,transparent 10px 49px,#98a591 49px 50px);
+  background-position:100% 0;background-repeat:repeat-y;background-size:calc(var(--ruler-w) - 8px) auto;
+}
+.side-ruler span{display:block;height:50px;padding-left:3px}
+.ruler-corner{position:sticky;top:0;left:0;z-index:8;width:var(--ruler-w);height:var(--ruler-h);background:var(--panel2);border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);display:none}
+.canvas-wrap.show-rulers .ruler-corner{display:block}
+.ruler-body{display:flex;align-items:flex-start;min-width:calc(100% - var(--ruler-w));padding-left:var(--ruler-w)}
+.ruler-body>.stage-shell-col{flex:1;min-width:0;padding:12px 12px 12px 0}
+
+/* ===== Объекты ===== */
+.stage-object{position:absolute;box-sizing:border-box;touch-action:none;cursor:move;transform-origin:center center;max-width:none}
+.stage-object.selected{outline:2px solid var(--tg-blue);outline-offset:2px}
+.stage-object.locked{cursor:not-allowed}
+.stage-object .resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:50%;background:var(--tg-blue);border:2px solid #fff;cursor:nwse-resize;display:none;box-shadow:0 2px 6px rgba(51,144,236,.4)}
+.stage-object.selected .resize-handle{display:block}
+.stage-object img{width:100%;height:100%;object-fit:cover;pointer-events:none;display:block}
+.stage-object .object-content{width:100%;height:100%;overflow:hidden}
+.stage-object .object-content button{width:100%;height:100%;border:0;cursor:pointer}
+.stage-object .object-content input{width:100%;height:100%;border:0;outline:none;background:transparent}
+.stage-object .ad-label{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600}
+.stage-object .tg-bubble{display:flex;flex-direction:column;justify-content:center;width:100%;height:100%;padding:12px 14px;border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(15,25,40,.08);border:1px solid var(--line);position:relative}
+.stage-object .nav-menu{display:flex;align-items:center;gap:8px;width:100%;height:100%;padding:8px;overflow:hidden}
+.stage-object .nav-menu a{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;color:inherit;white-space:nowrap;border-radius:10px;font-weight:500}
+.stage-object .nav-menu a:hover{background:var(--tg-blue-soft)}
+.stage-object .user-panel{display:flex;align-items:center;gap:10px;width:100%;height:100%;padding:10px}
+.stage-object .user-panel img{width:38px;height:38px;object-fit:cover;border-radius:50%}
+.stage-object .user-panel .user-copy{min-width:0;flex:1}
+.stage-object .coin{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:#ffe17a;border:3px solid #e8b72e;font-weight:800;font-size:23px}
+.stage-object .player{width:100%;height:100%;background:#76b8ff;border-radius:8px;border-bottom:5px solid #3b78b9}
+.stage-object .platform{width:100%;height:100%;background:#8dbb75;border-radius:5px}
+.stage-object.html-game{overflow:hidden;background:#f7f9f6}
+.stage-object.html-game iframe{display:block;width:100%;height:100%;min-width:0;min-height:0;border:0;background:#fff;contain:strict}
+
+.stage-object.popup-object{overflow:visible}
+.popup-preview-shade{position:absolute;inset:0;background:rgba(0,0,0,.46);display:grid;place-items:center;z-index:9999}
+.popup-preview-card{position:absolute;max-width:calc(100% - 24px);max-height:calc(100% - 24px);overflow:auto;background:#fff;color:#1f2a20;border-radius:var(--radius-lg);padding:18px;box-sizing:border-box;box-shadow:var(--shadow-modal)}
+.popup-preview-card img,.popup-preview-card video{max-width:100%;height:auto;display:block;border-radius:var(--radius-sm);margin:8px 0}
+@keyframes leafPopupIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes leafPopupOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.popup-preview-card{animation:leafPopupIn .22s ease-out both}
+.popup-preview-card.closing{animation:leafPopupOut .18s ease-in both}
+.popup-close{float:right;border:0;border-radius:var(--radius-sm);padding:6px 10px;background:var(--panel2);cursor:pointer;font-weight:500}
+
+/* ===== Правая панель ===== */
+.right-panel{min-height:0;overflow:auto;background:var(--panel);padding:12px 12px 18px;display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--line);overscroll-behavior:contain;scrollbar-width:thin}
+.panel-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:14px}
+.panel-tabs{display:flex;gap:2px;background:var(--panel2);border-radius:10px;padding:3px}
+.panel-tabs button{flex:1;padding:7px 4px;border-radius:8px;font-size:11px;color:var(--muted);font-weight:500}
+.panel-tabs button.active{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(15,25,40,.08);font-weight:600}
+.section{display:flex;flex-direction:column;gap:9px}
+.field{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted);font-weight:500}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:var(--radius-sm);padding:9px 10px;min-width:0;font-size:13px;max-width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{background:var(--panel);border-color:var(--tg-blue);outline:none;box-shadow:0 0 0 3px rgba(51,144,236,.15)}
+.field textarea{min-height:76px;resize:vertical;font-family:inherit}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini-title{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.object-list{display:flex;flex-direction:column;gap:3px}
+.layer-row{display:flex;align-items:center;gap:6px;padding:8px;border-radius:var(--radius-sm);min-width:0}
+.layer-row:hover{background:var(--panel2)}
+.layer-row.active{background:var(--tg-blue-soft)}
+.layer-row .layer-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;font-size:12px;font-weight:500}
+.layer-row .tiny{font-size:12px;color:var(--muted);padding:4px;border-radius:6px}
+.layer-row .tiny:hover{color:var(--text);background:var(--panel3)}
+
+/* Project-панель (п.4): сюда переехала шапка */
+.project-card{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:var(--radius);background:var(--panel2);border:1px solid var(--line)}
+.project-card .project-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.project-card .project-title{flex:1;min-width:0;border:0;background:transparent;padding:8px 10px;border-radius:var(--radius-sm);color:var(--text);font-weight:600;font-size:14px}
+.project-card .project-title:hover{background:var(--panel3)}
+.project-card .project-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--muted)}
+.project-card .project-actions{display:flex;gap:6px;flex-wrap:wrap}
+.project-card .project-actions .action-btn{height:32px;padding:0 12px;font-size:12px}
+
+/* ===== Preview tools ===== */
+.preview-tools{display:none;flex-shrink:0;min-height:46px;align-items:center;gap:6px;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;white-space:nowrap;scrollbar-width:thin}
+.preview-tools .smallbtn{height:32px;border-radius:var(--radius-sm);font-size:12px;padding:0 12px;border:1px solid var(--line);flex-shrink:0;display:inline-flex;align-items:center;gap:6px}
+.preview-tools .smallbtn.selected{background:var(--tg-blue-soft);color:var(--tg-blue-text);border-color:var(--tg-blue-soft-border)}
+.preview-caption{font-weight:700;font-size:13px;margin-right:4px;white-space:nowrap}
+.preview-hint{font-size:11px;color:var(--muted);white-space:nowrap}
+
+.app.preview-mode .right-panel{display:none!important}
+.app.preview-mode .workspace-grid{grid-template-columns:minmax(0,1fr)}
+.app.preview-mode .canvas-wrap.preview{padding:12px 0 24px;overflow:auto;overscroll-behavior:contain}
+.app.preview-mode .canvas-wrap.preview .stage-shell{box-shadow:none!important;margin-left:auto;margin-right:auto;transform-origin:top center}
+.app.preview-mode .canvas-wrap.preview .stage-top{display:none}
+.app.preview-mode .canvas-wrap.preview .stage-object{cursor:default;touch-action:auto}
+.app.preview-mode .canvas-wrap.preview .stage-object.selected{outline:none}
+.app.preview-mode .canvas-wrap.preview .resize-handle{display:none!important}
+.app.preview-mode #extendPageBtn{display:none}
+.workspace:has(.canvas-wrap.preview) .preview-tools{display:flex}
+
+/* ===== Bottom status bar ===== */
+.bottom-bar{height:36px;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--panel);font-size:12px;color:var(--muted);border-top:1px solid var(--line);overflow-x:auto;white-space:nowrap;scrollbar-width:thin}
+.bottom-bar>*{flex-shrink:0}
+.bottom-bar button{font-size:12px;color:var(--muted);padding:4px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:6px}
+.bottom-bar button:hover{background:var(--panel2);color:var(--text)}
+
+/* ===== Профиль-поповер ===== */
+.profile-popover{position:fixed;right:12px;bottom:90px;width:290px;background:var(--panel);border-radius:var(--radius-lg);padding:8px;z-index:30;display:none;box-shadow:var(--shadow-pop);border:1px solid var(--line);max-height:calc(100dvh - 100px);overflow:auto}
+.profile-popover.open{display:block}
+.profile-top{padding:14px;border-radius:var(--radius);background:var(--panel2);margin-bottom:6px;display:flex;flex-direction:column;gap:4px}
+.profile-top strong{display:block;font-size:14px}
+.profile-top span{font-size:11px;color:var(--muted)}
+.profile-item{width:100%;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);text-align:left;font-size:13px;font-weight:500}
+.profile-item:hover{background:var(--panel2)}
+.profile-item .emoji{width:22px;text-align:center;font-size:15px;display:grid;place-items:center}
+.profile-item svg{color:var(--muted)}
+.profile-item:hover svg{color:var(--tg-blue-text)}
+.profile-sep{height:1px;background:var(--line);margin:4px 6px}
+.developer-link{color:inherit;text-decoration:none;display:flex;width:100%}
+
+/* ===== Меню ===== */
+.context-menu{position:fixed;z-index:1000;min-width:230px;max-width:calc(100vw - 16px);background:var(--panel);color:var(--text);padding:6px;border-radius:var(--radius);display:none;box-shadow:var(--shadow-pop);border:1px solid var(--line);max-height:calc(100dvh - 16px);overflow:auto}
+.context-menu.open{display:block}
+.context-menu button{display:flex;width:100%;align-items:center;gap:10px;text-align:left;padding:9px 10px;border-radius:var(--radius-sm);font-size:12.5px;font-weight:500}
+.context-menu button:hover{background:var(--panel2)}
+.context-menu button svg{color:var(--muted)}
+.context-menu button:hover svg{color:var(--tg-blue-text)}
+.context-menu .menu-sep{height:1px;background:var(--line);margin:4px 5px}
+.context-menu .menu-title{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px 4px}
+
+/* ===== Модалки ===== */
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,25,40,.55);z-index:40;display:none;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(2px);overflow:auto;overscroll-behavior:contain}
+.modal-backdrop.open{display:flex}
+.modal{width:min(760px,100%);max-height:calc(100dvh - 36px);overflow:auto;background:var(--panel);border-radius:var(--radius-lg);padding:22px;box-shadow:var(--shadow-modal);border:1px solid var(--line);overscroll-behavior:contain}
+.modal h2{font-size:18px;margin:0 0 8px;font-weight:700}
+.modal p{font-size:13px;color:var(--muted);margin:0 0 16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.modal-actions .action-btn{padding:0 16px;height:38px;border-radius:var(--radius-sm)}
+.modal-actions .action-btn:not(.primary){background:var(--panel2)}
+
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:#1f2a20;color:#fff;padding:11px 16px;border-radius:var(--radius);z-index:50;display:none;max-width:90vw;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;transition:opacity .2s,transform .2s}
+.toast.show{display:block;opacity:1;transform:translateX(-50%) translateY(0)}
+
+.code-hint{font-size:11px;line-height:1.55;color:var(--muted);background:var(--panel2);padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--line)}
+.telegram-bubble{border-radius:var(--radius);background:var(--panel2);padding:12px 14px;border:1px solid var(--line)}
+.empty{font-size:12px;line-height:1.55;color:var(--muted);padding:12px 4px}
+.hidden{display:none!important}
+
+/* ===== Нижняя панель (п.1 + п.6): Photoshop-style dock ===== */
+.dock{
+  flex-shrink:0;background:var(--bg);border-top:1px solid var(--line);
+  display:flex;justify-content:center;
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));
+}
+.dock-inner{
+  display:flex;align-items:stretch;gap:6px;
+  width:100%;max-width:1100px;
+  background:var(--panel);border-radius:18px;
+  box-shadow:var(--shadow-pop);border:1px solid var(--line);
+  overflow:hidden;position:relative;
+  padding:4px 6px;
+}
+.dock-track{
+  display:flex;align-items:stretch;gap:2px;
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:none;scroll-behavior:smooth;
+  flex:1;padding:2px;
+}
+.dock-track::-webkit-scrollbar{display:none}
+
+/* Группа ячеек как в Photoshop */
+.dock-group{display:flex;align-items:stretch;gap:2px;padding:0 2px;position:relative;flex:0 0 auto}
+.dock-group + .dock-group::before,
+.dock-sep{content:'';width:1px;align-self:stretch;background:var(--line);margin:6px 4px;flex:0 0 1px}
+
+.dock-cell{
+  flex:0 0 auto;width:56px;height:56px;
+  border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  background:transparent;color:var(--text);
+  border:1px solid transparent;cursor:pointer;position:relative;
+  transition:background-color .14s,transform .14s,box-shadow .14s,color .14s,border-color .14s;
+  padding:4px 2px;
+}
+.dock-cell:hover{background:var(--panel2);border-color:var(--line)}
+.dock-cell:active{transform:translateY(0)}
+.dock-cell.active{background:var(--tg-blue-soft);color:var(--tg-blue-text);border-color:var(--tg-blue-soft-border)}
+.dock-cell .dock-icon{display:grid;place-items:center;width:100%;height:26px}
+.dock-cell .dock-icon svg{width:var(--dock-icon);height:var(--dock-icon);stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.dock-cell .dock-label{font-size:9.5px;line-height:1.05;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.dock-cell:hover .dock-label{color:var(--text)}
+.dock-cell.active .dock-label{color:var(--tg-blue-text);font-weight:600}
+.dock-cell.profile{
+  background:linear-gradient(135deg,#54b3ff,#3390ec);color:#fff;
+  width:60px;
+}
+.dock-cell.profile .dock-icon svg{stroke:#fff}
+.dock-cell.profile .dock-label{color:#eaf4ff;font-weight:600}
+.dock-cell.profile:hover{background:linear-gradient(135deg,#4aa7f3,#2481d2)}
+.dock-cell .badge{
+  position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;
+  border-radius:999px;background:#e53935;color:#fff;font-size:10px;font-weight:700;
+  display:grid;place-items:center;line-height:1;
+}
+
+/* Кнопка collapse */
+.dock-toggle{
+  flex:0 0 auto;width:26px;height:56px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);align-self:stretch;
+}
+.dock-toggle:hover{background:var(--panel2);color:var(--text)}
+.dock-toggle svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+
+.dock.collapsed .dock-track{display:none}
+.dock.collapsed .dock-inner{max-width:120px}
+
+/* Тултип */
+.dock-cell .tooltip{
+  position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
+  background:#1f2a20;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;
+  white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .14s;z-index:10;
+}
+.dock-cell:hover .tooltip{opacity:1}
+
+@media(max-width:560px){
+  .dock{padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+  .dock-inner{border-radius:16px;padding:3px 4px;gap:4px}
+  .dock-cell{width:48px;height:48px;border-radius:10px}
+  .dock-cell .dock-icon{height:22px}
+  .dock-cell .dock-icon svg{width:18px;height:18px}
+  .dock-cell .dock-label{font-size:8.5px}
+  .dock-cell.profile{width:52px}
+}
+@media(max-width:380px){
+  .dock-cell{width:44px;height:44px}
+  .dock-cell .dock-label{display:none}
+  .dock-cell{justify-content:center}
+  .dock-cell .dock-icon{height:auto}
+}
+
+/* Градиент ячейки */
+@keyframes leafGradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.grad-anim{background-size:200% 200% !important;animation:leafGradShift 4s ease infinite}
+
+.gradient-menu{position:fixed;z-index:1200;min-width:250px;background:var(--panel);color:var(--text);padding:8px;border-radius:var(--radius);display:none;box-shadow:var(--shadow-modal);border:1px solid var(--line)}
+.gradient-menu.open{display:block}
+.gradient-menu .title{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:4px 6px}
+.gradient-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:4px}
+.gradient-swatch{width:100%;aspect-ratio:1;border-radius:10px;cursor:pointer;border:2px solid transparent;transition:border-color .14s,transform .14s}
+.gradient-swatch:hover{transform:scale(1.06);border-color:var(--tg-blue)}
+.gradient-menu .custom-row{display:flex;gap:6px;padding:6px 4px;align-items:center}
+.gradient-menu .custom-row input[type=color]{width:36px;height:32px;border:none;border-radius:8px;background:var(--panel2);cursor:pointer;padding:0}
+.gradient-menu .custom-row input[type=text]{flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);font-size:11px;font-family:ui-monospace,monospace}
+.gradient-menu .row-btn{display:flex;width:100%;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);font-size:12.5px;font-weight:500;text-align:left}
+.gradient-menu .row-btn:hover{background:var(--panel2)}
+.gradient-menu .row-btn.active{background:var(--tg-blue-soft);color:var(--tg-blue-text)}
+
+/* ===== Адаптив ===== */
+@media(max-width:900px){
+  .workspace-grid{grid-template-columns:minmax(0,1fr)}
+  .right-panel{position:absolute;right:8px;top:8px;bottom:8px;width:min(320px,calc(100% - 16px));z-index:8;border-radius:var(--radius);display:none;box-shadow:var(--shadow-pop);border:1px solid var(--line);max-height:calc(100% - 16px)}
+  .right-panel.open{display:flex}
+  .preview-hint{display:none}
+}
+@media(max-width:560px){
+  .bottom-bar{height:34px;gap:6px;padding:0 8px;font-size:11px}
+  .bottom-bar .hide-mobile{display:none}
+  .preview-tools{min-height:44px;gap:4px;padding:5px 8px}
+  .preview-caption{display:none}
+  .preview-tools .smallbtn{padding:0 8px;font-size:11px}
+  .modal{padding:18px;border-radius:var(--radius);max-height:calc(100dvh - 20px)}
+  .modal h2{font-size:16px}
+  .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .admin-dashboard{max-height:65vh}
+  .profile-popover{right:8px;left:8px;width:auto;bottom:80px}
+  .modal-backdrop{align-items:flex-end;padding:8px}
+  :root{--ruler-w:20px;--ruler-h:18px}
+}
+@media(max-width:380px){
+  .action-btn.primary{padding:0 8px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+/* Дашборд */
+.admin-dashboard{display:grid;gap:14px;max-height:min(70vh,650px);overflow:auto;text-align:left;padding-right:2px}
+.stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat-card{background:var(--panel2);border-radius:var(--radius);padding:14px;min-width:0;border:1px solid var(--line)}
+.stat-card strong{display:block;font-size:24px;line-height:1.15;color:var(--text);font-weight:700}
+.stat-card span{font-size:11px;color:var(--muted);font-weight:500}
+.admin-list{display:flex;flex-direction:column;gap:6px}
+.admin-row{padding:12px 14px;background:var(--panel2);border-radius:var(--radius);border:1px solid var(--line);overflow-wrap:anywhere}
+.admin-row strong{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.admin-row p{margin:6px 0 4px;font-size:13px;white-space:pre-wrap;color:var(--text)}
+.admin-row small{font-size:10.5px;color:var(--muted);font-family:ui-monospace,monospace}
+.admin-actions{display:flex;gap:6px;flex-wrap:wrap}
+.admin-actions button{border-radius:var(--radius-sm);padding:9px 12px;background:var(--panel2);font-size:12px;font-weight:500;border:1px solid var(--line)}
+.admin-actions button:hover{background:var(--panel3)}
+@media(max-width:560px){.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-dashboard{max-height:65vh}}
+
+/* Анимации */
+@keyframes leafFade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+@keyframes leafFloat{0%,100%{translate:0 0}50%{translate:0 -9px}}
+@keyframes leafPulse{0%,100%{scale:1}50%{scale:1.06}}
+@keyframes leafBounce{0%,100%{translate:0 0}40%{translate:0 -14px}65%{translate:0 0}}
+@keyframes leafFadeOut{from{opacity:1}to{opacity:0;transform:translateY(-6px)}}
+.anim-fade{animation:leafFade .6s ease}
+.anim-fadeout{animation:leafFadeOut .6s ease}
+.anim-float{animation:leafFloat 1.5s ease}
+.anim-pulse{animation:leafPulse .7s ease}
+.anim-bounce{animation:leafBounce .7s ease}
+
+.center-guide{position:absolute;z-index:100;pointer-events:none;display:none;background:var(--tg-blue);opacity:.85}
+.center-guide.vertical{top:0;bottom:0;width:1px}
+.center-guide.horizontal{left:0;right:0;height:1px}
+</style>
+</head>
+<body>
+<!-- ===== SVG-набор иконок (п.6) ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 7V5h16v2"/><path d="M9 5v14"/><path d="M15 5v14"/></symbol>
+    <symbol id="i-button" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="3"/><path d="M8 12h8"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+    <symbol id="i-input" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M22 8l-6 4 6 4V8z"/></symbol>
+    <symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></symbol>
+    <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18"/><circle cx="6" cy="6" r=".5"/><circle cx="8.5" cy="6" r=".5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+    <symbol id="i-gamepad" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="4"/><path d="M6 12h4"/><path d="M8 10v4"/><circle cx="16" cy="11" r=".8"/><circle cx="18" cy="13" r=".8"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 12l10 5 10-5"/><path d="M2 17l10 5 10-5"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-export" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="10" rx="1"/><rect x="13" y="3" width="8" height="6" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="3" y="17" width="8" height="4" rx="1"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20a15 15 0 0 1 0-20z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2"/><rect x="3" y="7" width="18" height="12" rx="2"/><circle cx="17" cy="13" r="1.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.8 6.3 6.8.6-5.2 4.6 1.6 6.7L12 17.9 5.9 21l1.6-6.7L2.3 9.9l6.8-.6L12 3z"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8a4 4 0 0 1 0 8"/><path d="M18 5a8 8 0 0 1 0 14"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 1 1 6 0"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></symbol>
+    <symbol id="i-duplicate" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></symbol>
+    <symbol id="i-shadow" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="8" cy="9" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="16" cy="9" r="1"/><path d="M12 22a4 4 0 0 1 0-8 4 4 0 0 0 0-8"/></symbol>
+    <symbol id="i-plugin" viewBox="0 0 24 24"><path d="M9 3v4H5a1 1 0 0 0-1 1v4h4a3 3 0 1 1 0 6H4v4a1 1 0 0 0 1 1h4v-4a3 3 0 1 1 6 0v4h4a1 1 0 0 0 1-1v-4h-4a3 3 0 1 1 0-6h4V8a1 1 0 0 0-1-1h-4V3H9z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></symbol>
+    <symbol id="i-shapes" viewBox="0 0 24 24"><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17" cy="17" r="4"/><path d="M8 3l5 8H3l5-8z"/></symbol>
+    <symbol id="i-html" viewBox="0 0 24 24"><path d="M4 4h16l-2 16-6 2-6-2-2-16z"/><path d="M8 9h8l-.5 4H9l.3 3 2.7 1 2.7-1"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <!-- Шапка удалена (п.3). Управление проектом — в правой панели. -->
+
+  <div class="main">
+    <section class="workspace">
+      <div class="preview-tools" id="previewTools" aria-label="Режим просмотра">
+        <span class="preview-caption">Просмотр</span>
+        <button class="smallbtn device-btn selected" data-device="desktop">▣ Компьютер</button>
+        <button class="smallbtn device-btn" data-device="tablet">▤ Планшет</button>
+        <button class="smallbtn device-btn" data-device="mobile">▯ Телефон</button>
+        <span class="spacer"></span><span class="preview-hint">Проверка интерактивности</span>
+      </div>
+
+      <div class="workspace-grid">
+        <div class="canvas-wrap show-rulers" id="canvasWrap">
+          <div class="ruler-wrap">
+            <div class="site-ruler" id="siteRuler" aria-label="Горизонтальная линейка"><div class="ruler-inner" id="siteRulerInner"></div></div>
+            <div class="side-ruler" id="sideRuler" aria-label="Вертикальная линейка"><div id="sideRulerInner"></div></div>
+            <div class="ruler-corner" aria-hidden="true"></div>
+            <div class="ruler-body">
+              <div class="stage-shell-col">
+                <div class="stage-shell" id="stageShell">
+                  <div class="stage-top"><span id="stageLabel">СТРАНИЦА / 960 PX</span><span id="stageSize">960 × 700</span></div>
+                  <div class="stage" id="stage" style="width:960px;height:700px">
+                    <div class="center-guide vertical" id="centerGuideV"></div>
+                    <div class="center-guide horizontal" id="centerGuideH"></div>
+                  </div>
+                </div>
+                <div style="width:960px;margin:0 auto 10px;display:flex;justify-content:center">
+                  <button class="action-btn" id="extendPageBtn">＋ Добавить 500 px к странице</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая панель: сюда переехала шапка (п.4) -->
+        <aside class="right-panel open" id="rightPanel">
+          <div class="panel-head"><span id="panelTitle">Проект</span><button class="iconbtn" id="closePanelBtn" title="Скрыть панель" style="min-width:28px;height:28px;padding:0">✕</button></div>
+          <div id="projectCard" class="project-card">
+            <div class="project-row">
+              <span class="pill" id="projectTypeBadge">Сайт</span>
+              <span class="spacer"></span>
+              <span id="saveStatus" style="font-size:11px;color:var(--muted)">Локальный проект</span>
+            </div>
+            <input id="projectName" class="project-title" value="Мой первый проект" aria-label="Название проекта" title="Название проекта">
+            <div class="project-meta">
+              <span>📐 960 × <span id="projectHeight">700</span> px</span>
+              <span>·</span>
+              <span>🧱 <span id="projectObjects">0</span> объектов</span>
+            </div>
+            <div class="project-actions">
+              <button class="iconbtn" id="undoBtn" title="Отменить (Ctrl+Z)"><svg width="16" height="16"><use href="#i-undo"/></svg><span class="btn-label">Отменить</span></button>
+              <button class="iconbtn" id="redoBtn" title="Повторить (Ctrl+Y)"><svg width="16" height="16"><use href="#i-redo"/></svg><span class="btn-label">Повторить</span></button>
+              <button class="iconbtn" id="themeBtn" title="Тема"><svg width="16" height="16"><use href="#i-theme"/></svg></button>
+            </div>
+            <div class="project-actions">
+              <button class="action-btn primary" id="previewBtn"><svg width="14" height="14"><use href="#i-play"/></svg> Предпросмотр</button>
+              <button class="action-btn" id="exportBtn"><svg width="14" height="14"><use href="#i-export"/></svg> Экспорт</button>
+            </div>
+          </div>
+          <div class="panel-tabs" id="panelTabs">
+            <button class="active" data-tab="add">Добавить</button>
+            <button data-tab="properties">Свойства</button>
+            <button data-tab="layers">Слои</button>
+          </div>
+          <div id="panelContent"></div>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <!-- Нижняя панель (п.1, п.2, п.6) -->
+  <div class="dock" id="dock">
+    <div class="dock-inner">
+      <div class="dock-track" id="dockTrack" aria-label="Инструменты"></div>
+      <button class="dock-toggle" id="dockToggle" title="Свернуть/развернуть"><svg width="16" height="16"><use href="#i-chevron-up"/></svg></button>
+    </div>
+  </div>
+
+  <footer class="bottom-bar">
+    <span id="selectionStatus">Ничего не выбрано</span><span>·</span><span id="objectCount">0 объектов</span>
+    <span class="spacer"></span>
+    <button id="zoomOut">−</button><span id="zoomLabel">100%</span><button id="zoomIn">＋</button>
+    <button id="fitBtn" class="hide-mobile">Подогнать</button><button id="saveBtn">Сохранить</button>
+  </footer>
+</div>
+
+<!-- Профиль-поповер -->
+<div class="profile-popover" id="profilePopover">
+  <div class="profile-top"><strong>Мой профиль</strong><span>Локальный режим · без авторизации</span></div>
+  <button class="profile-item" data-profile="builder"><span class="emoji"><svg width="16" height="16"><use href="#i-grid"/></svg></span> Конструктор</button>
+  <button class="profile-item" data-profile="preview"><span class="emoji"><svg width="16" height="16"><use href="#i-play"/></svg></span> Предпросмотр</button>
+  <button class="profile-item" data-profile="export"><span class="emoji"><svg width="16" height="16"><use href="#i-export"/></svg></span> Экспорт HTML</button>
+  <button class="profile-item" data-profile="dashboard"><span class="emoji"><svg width="16" height="16"><use href="#i-dashboard"/></svg></span> Дашборд проекта</button>
+  <button class="profile-item" data-profile="sites"><span class="emoji"><svg width="16" height="16"><use href="#i-globe"/></svg></span> Мои сайты и игры</button>
+  <button class="profile-item" data-profile="analytics"><span class="emoji"><svg width="16" height="16"><use href="#i-chart"/></svg></span> Статистика сайта</button>
+  <button class="profile-item" data-profile="inbox"><span class="emoji"><svg width="16" height="16"><use href="#i-mail"/></svg></span> Сообщения <span id="inboxBadge" class="tg-badge" style="margin-left:auto">0</span></button>
+  <div class="profile-sep"></div>
+  <a class="profile-item developer-link" href="index.html" data-bridge><span class="emoji"><svg width="16" height="16"><use href="#i-settings"/></svg></span> Панель разработчика</a>
+  <button class="profile-item" data-profile="wallet"><span class="emoji"><svg width="16" height="16"><use href="#i-wallet"/></svg></span> Кошелёк TON</button>
+  <button class="profile-item" data-profile="plans"><span class="emoji"><svg width="16" height="16"><use href="#i-star"/></svg></span> Тарифы и оплата</button>
+  <div class="profile-sep"></div>
+  <button class="profile-item" data-profile="archive"><span class="emoji"><svg width="16" height="16"><use href="#i-archive"/></svg></span> Архив проектов</button>
+  <button class="profile-item" data-profile="ads"><span class="emoji"><svg width="16" height="16"><use href="#i-megaphone"/></svg></span> Реклама</button>
+  <button class="profile-item" data-profile="store"><span class="emoji"><svg width="16" height="16"><use href="#i-bag"/></svg></span> Магазин</button>
+</div>
+
+<!-- Меню профиля (ПКМ/удержание) -->
+<div class="context-menu" id="profileMenu" role="menu" aria-label="Меню пользователя">
+  <div class="menu-title">Пользователь</div>
+  <button data-profile-action="plugins"><svg width="16" height="16"><use href="#i-plugin"/></svg> Плагины</button>
+  <button data-profile-action="gradient"><svg width="16" height="16"><use href="#i-palette"/></svg> Градиент / цвет фона иконки</button>
+  <button data-profile-action="theme"><svg width="16" height="16"><use href="#i-theme"/></svg> Тема: тёмная / светлая</button>
+</div>
+
+<!-- ПКМ по пустому месту холста -->
+<div class="context-menu" id="canvasContextMenu" role="menu" aria-label="Добавить элемент">
+  <div class="menu-title">Добавить элемент</div>
+  <button data-add="text"><svg width="16" height="16"><use href="#i-text"/></svg> Текст</button>
+  <button data-add="button"><svg width="16" height="16"><use href="#i-button"/></svg> Кнопка</button>
+  <button data-add="image"><svg width="16" height="16"><use href="#i-image"/></svg> Изображение</button>
+  <button data-add="video"><svg width="16" height="16"><use href="#i-video"/></svg> Видео</button>
+  <button data-add="ad"><svg width="16" height="16"><use href="#i-megaphone"/></svg> Реклама</button>
+  <button data-add="card"><svg width="16" height="16"><use href="#i-card"/></svg> Карточка</button>
+  <div class="menu-sep"></div>
+  <button data-add="input"><svg width="16" height="16"><use href="#i-input"/></svg> Поле ввода</button>
+  <button data-add="nav"><svg width="16" height="16"><use href="#i-nav"/></svg> Бар-меню</button>
+  <button data-add="userpanel"><svg width="16" height="16"><use href="#i-user"/></svg> Панель пользователя</button>
+  <button data-add="htmlgame"><svg width="16" height="16"><use href="#i-html"/></svg> HTML-блок</button>
+  <button data-add="window"><svg width="16" height="16"><use href="#i-window"/></svg> Окно</button>
+  <button data-add="popup"><svg width="16" height="16"><use href="#i-bell"/></svg> Уведомление</button>
+  <div class="menu-sep"></div>
+  <button data-canvas-action="upload"><svg width="16" height="16"><use href="#i-export"/></svg> Загрузить изображение</button>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="modalTitle">Раздел</h2>
+    <p id="modalText"></p>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="action-btn" id="modalCancel">Закрыть</button>
+      <button class="action-btn primary" id="modalAction">Понятно</button>
+    </div>
+  </div>
+</div>
+
+<div class="gradient-menu" id="gradientMenu" role="menu" aria-label="Настройка градиента ячейки">
+  <div class="title">Заготовки</div>
+  <div class="gradient-grid" id="gradientGrid"></div>
+  <div class="title">Свой цвет</div>
+  <div class="custom-row">
+    <input type="color" id="gradColor1" value="#3390ec">
+    <input type="color" id="gradColor2" value="#b7ed91">
+    <input type="text" id="gradCustom" placeholder="linear-gradient(...)">
+  </div>
+  <button class="row-btn" id="gradApply">✓ Применить градиент</button>
+  <button class="row-btn" id="gradAnimToggle">◐ Анимация градиента</button>
+  <div class="menu-sep" style="height:1px;background:var(--line);margin:4px 5px"></div>
+  <button class="row-btn" id="gradReset">× Сбросить фон</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="context-menu" id="objectContextMenu" role="menu" aria-label="Меню объекта">
+  <button data-context="properties"><svg width="16" height="16"><use href="#i-settings"/></svg> Свойства объекта</button>
+  <button data-context="duplicate"><svg width="16" height="16"><use href="#i-duplicate"/></svg> Дублировать</button>
+  <button data-context="front"><svg width="16" height="16"><use href="#i-up"/></svg> На передний план</button>
+  <button data-context="back"><svg width="16" height="16"><use href="#i-down"/></svg> На задний план</button>
+  <div class="menu-sep"></div>
+  <button data-context="shadow"><svg width="16" height="16"><use href="#i-shadow"/></svg> Тень: вкл./выкл.</button>
+  <button data-context="delete" style="color:#e53935"><svg width="16" height="16"><use href="#i-trash"/></svg> Удалить объект</button>
+</div>
+
+<script>
+/* LEAF Studio — Telegram Edition 5.4 · ЭТАП 4.2
+   Изменения 4.2:
+   1) Photoshop-style нижний док
+   2) Пользователь перенесён в нижний док (слева)
+   3) Шапка удалена
+   4) Управление проектом перенесено в правую панель
+   5) Левый toolrail удалён
+   6) Крупные векторные SVG-иконки
+*/
+(() => {
+'use strict';
+
+const ONLINE_MODE = false;
+const API_BASE = 'https://api.leaf.studio';
+
+const onlineApi = {
+  async saveProject(payload) { if(!ONLINE_MODE) return {ok:false,reason:'offline'}; return {ok:false}; },
+  async publishProject(payload) { if(!ONLINE_MODE) return {ok:false,reason:'offline'}; return {ok:false}; },
+  async recordEvent(type, detail) { if(!ONLINE_MODE) return {ok:false,reason:'offline'}; return {ok:false}; },
+  async loadGames() { if(!ONLINE_MODE) return {ok:false,reason:'offline'}; return {ok:false}; }
+};
+
+const $ = (s,root=document) => root.querySelector(s);
+const $$ = (s,root=document) => [...root.querySelectorAll(s)];
+
+const STORAGE_KEY = 'leafStudio.stage2.project';
+const UI_KEY = 'leafStudio.stage2.ui';
+const BRIDGE_KEY = 'leafStudio.boardBridge.v1';
+const GAMES_DB = 'leafStudio';
+const GAMES_STORE = 'games';
+const LAST_GAME_KEY = 'leafStudio.lastGameToInsert.v1';
+const DEVELOPER_GAMES_KEY = 'leafStudio.developerGames.v1';
+const DEVELOPER_PAGE = 'index.html';
+
+/* п.6: карта старых символов → id SVG-иконок.
+   При замене набора правится только этот объект.
+*/
+const ICON_MAP = {
+  'T':'i-text', '▣':'i-button', '▧':'i-image', '⌑':'i-input', '▤':'i-card',
+  '▷':'i-video', '☰':'i-nav', '◉':'i-panel', '▦':'i-window', '◬':'i-bell',
+  '⌘':'i-code', '⚙':'i-settings', '●':'i-user', '＋':'i-plus', '◐':'i-theme',
+  '↶':'i-undo', '↷':'i-redo', '↥':'i-export', '⊞':'i-grid'
+};
+
+const stage = $('#stage');
+const stageShell = $('#stageShell');
+const canvasWrap = $('#canvasWrap');
+const panelContent = $('#panelContent');
+const rightPanel = $('#rightPanel');
+
+let pageHeight = 700;
+let selectedId = null;
+let nextId = 1;
+let projectType = 'site';
+let activePanel = 'elements';
+let activeTab = 'add';
+let previewMode = false;
+let previewDevice = 'desktop';
+let gridEnabled = false;
+let zoom = 1;
+let objects = [];
+let undoStack = [];
+let redoStack = [];
+let dragState = null;
+let toastTimer = null;
+let lastSavedSnapshot = '';
+let devGamesCache = [];
+
+const EVENTS_KEY='leafStudio.localEvents.v1';
+let siteEvents=[];
+try{siteEvents=JSON.parse(localStorage.getItem(EVENTS_KEY)||'[]');if(!Array.isArray(siteEvents))siteEvents=[];}catch(_){siteEvents=[];}
+function saveEvents(){try{localStorage.setItem(EVENTS_KEY,JSON.stringify(siteEvents.slice(-1500)));}catch(_){notify('Не удалось сохранить журнал событий');}}
+function recordEvent(type,detail={},isTest=false){
+  const row={id:'evt_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7),type,detail,isTest:!!isTest,at:new Date().toISOString(),project:$('#projectName')?.value||'Мой сайт'};
+  siteEvents.push(row);if(siteEvents.length>1500)siteEvents=siteEvents.slice(-1500);saveEvents();updateInboxBadge();
+  onlineApi.recordEvent(type, detail).catch(()=>{});
+  return row;
+}
+function updateInboxBadge(){
+  const n=siteEvents.filter(e=>!e.isTest&&['message','comment','application'].includes(e.type)).length;
+  const b=$('#inboxBadge');if(b)b.textContent=String(n);
+  const dockBadge=$('#dockProfileBadge');if(dockBadge)dockBadge.textContent=String(n);
+}
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+const defaults = {
+  text: {label:'Текст',x:80,y:70,w:330,h:70,text:'Новый заголовок',fontSize:32,color:'#1f2a20',background:'transparent',radius:0},
+  button: {label:'Кнопка',x:80,y:170,w:170,h:48,text:'Нажми сюда',fontSize:15,color:'#ffffff',background:'#3390ec',radius:10,link:'#section-2'},
+  image: {label:'Изображение',x:80,y:245,w:220,h:150,text:'',fontSize:14,color:'#1f2a20',background:'#eef3f8',radius:10},
+  input: {label:'Поле ввода',x:80,y:420,w:260,h:42,text:'Введите текст…',fontSize:14,color:'#1f2a20',background:'#f4f6f8',radius:10},
+  card: {label:'Карточка',x:360,y:245,w:250,h:170,text:'Карточка\nОписание блока',fontSize:17,color:'#1f2a20',background:'#ffffff',radius:14},
+  video: {label:'Видео',x:360,y:440,w:300,h:170,text:'https://example.com/video.mp4',fontSize:14,color:'#1f2a20',background:'#eef3f8',radius:10},
+  ad: {label:'Рекламный пост',x:660,y:245,w:220,h:170,text:'Рекламный пост\nТекст объявления',fontSize:16,color:'#1f2a20',background:'#ffffff',radius:14,link:''},
+  player: {label:'Игрок',x:80,y:450,w:42,h:54,text:'',fontSize:14,color:'#1f2a20',background:'#76b8ff',radius:8},
+  platform: {label:'Платформа',x:70,y:570,w:250,h:22,text:'',fontSize:14,color:'#1f2a20',background:'#8dbb75',radius:5},
+  coin: {label:'Монета',x:220,y:400,w:40,h:40,text:'+',fontSize:20,color:'#5e4811',background:'#ffe17a',radius:50},
+  nav: {label:'Бар-меню',x:30,y:24,w:900,h:58,text:'Главная | Игры | Новости | Профиль',fontSize:14,color:'#1f2a20',background:'#ffffff',radius:12,link:'#'},
+  userpanel: {label:'Панель пользователя',x:650,y:100,w:260,h:74,text:'Пользователь\nМоя страница · Настройки',fontSize:14,color:'#1f2a20',background:'#ffffff',radius:14},
+  window: {label:'Окно экосистемы',x:300,y:220,w:300,h:190,text:'Описание окна или модуля',title:'Новое окно',windowKind:'blank',actionLabel:'Открыть окно',fontSize:15,color:'#1f2a20',background:'#ffffff',radius:14,link:''},
+  popup: {label:'Уведомление',x:280,y:180,w:400,h:230,text:'Новое уведомление\nДобавь текст, изображение или видео.',fontSize:18,color:'#1f2a20',background:'#ffffff',radius:16,src:'',videoUrl:'',overlayOpacity:46,closeLabel:'Закрыть'},
+  htmlgame: {label:'HTML-блок',x:120,y:300,w:520,h:320,text:'',fontSize:14,color:'#1f2a20',background:'#f7f9f6',radius:10,htmlResponsive:true,htmlCode:`<!doctype html><html lang="ru"><meta charset="utf-8"><style>body{font:16px system-ui;text-align:center;padding:20px;background:#f5f8f2}button{padding:10px 16px;border:0;border-radius:8px;background:#3390ec;color:#fff;font-weight:600}</style><h2>Моя мини-игра</h2><p id="score">Нажми кнопку</p><button onclick="document.querySelector('#score').textContent='Игра работает!'">Старт</button></html>`}
+};
+
+function uid(){ return 'obj_' + (nextId++); }
+function notify(message){
+  const toast = $('#toast'); toast.textContent = message; toast.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>toast.classList.remove('show'), 2600);
+}
+function deepCopy(value){ return JSON.parse(JSON.stringify(value)); }
+function snapshot(){ return JSON.stringify({projectName:$('#projectName')?.value,pageHeight,projectType,objects}); }
+function markHistory(){
+  const current = snapshot();
+  if (undoStack[undoStack.length-1] !== current) undoStack.push(current);
+  if (undoStack.length > 60) undoStack.shift();
+  redoStack = []; updateUndoButtons();
+}
+function restoreSnapshot(raw){
+  try {
+    const data=JSON.parse(raw);
+    pageHeight=Math.max(700,Number(data.pageHeight)||700);
+    projectType=data.projectType==='game'?'game':'site';
+    objects=Array.isArray(data.objects)?data.objects:[];
+    const nameInput=$('#projectName'); if(nameInput) nameInput.value=data.projectName||'Мой первый проект';
+    nextId=Math.max(1,...objects.map(o=>Number(String(o.id).replace('obj_',''))+1||1));
+    selectedId=null;renderAll();updateModeUI();
+  } catch(err){console.error('Ошибка восстановления проекта',err);notify('Не удалось восстановить состояние проекта');}
+}
+function undo(){if(undoStack.length<2)return;redoStack.push(undoStack.pop());restoreSnapshot(undoStack[undoStack.length-1]);updateUndoButtons();}
+function redo(){if(!redoStack.length)return;const s=redoStack.pop();undoStack.push(s);restoreSnapshot(s);updateUndoButtons();}
+function updateUndoButtons(){
+  const u=$('#undoBtn'),r=$('#redoBtn');
+  if(u){u.disabled=undoStack.length<2;u.style.opacity=undoStack.length<2?'.4':'1';}
+  if(r){r.disabled=!redoStack.length;r.style.opacity=!redoStack.length?'.4':'1';}
+}
+function getSelected(){return objects.find(o=>o.id===selectedId)||null;}
+function normalizeObject(o){
+  o.x=Number(o.x)||0;o.y=Number(o.y)||0;
+  o.w=Math.max(20,Number(o.w)||120);o.h=Math.max(20,Number(o.h)||60);
+  o.rotation=Number(o.rotation)||0;o.fontSize=Number(o.fontSize)||16;
+  o.radius=Number(o.radius)||0;o.visible=o.visible!==false;o.locked=!!o.locked;
+  o.layer = Number.isFinite(o.layer) ? o.layer : 0;
+  return o;
+}
+function addObject(type,extra={}){
+  if(!defaults[type]){notify('Этот тип элемента пока не реализован');return;}
+  markHistory();const base=deepCopy(defaults[type]);
+  const obj=normalizeObject({id:uid(),type,...base,...extra,visible:true,locked:false,rotation:0,opacity:100,animation:'none',animationTrigger:'load',layer:objects.length});
+  if(type==='image'&&!extra.src){obj.text='Загруженное изображение появится здесь';}
+  objects.push(obj);selectedId=obj.id;renderAll();activePanel='elements';activeTab='properties';renderPanel();notify(base.label+' добавлен');
+}
+function escapeHTML(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderObject(obj){
+  const el=document.createElement('div');
+  el.id=obj.anchorId||obj.id;
+  el.className='stage-object'+(obj.id===selectedId&&!previewMode?' selected':'')+(obj.locked?' locked':'');
+  el.dataset.id=obj.id;
+  el.style.left=obj.x+'px';el.style.top=obj.y+'px';
+  el.style.width=obj.w+'px';el.style.height=obj.h+'px';
+  el.style.zIndex=obj.layer||0;
+  el.style.transform=`rotate(${obj.rotation||0}deg)`;
+  el.style.opacity=(obj.opacity??100)/100;
+  el.style.display=obj.visible?'block':'none';
+  el.style.borderRadius=(obj.radius||0)+'px';
+  el.style.color=obj.color||'#1f2a20';
+  el.style.fontSize=(obj.fontSize||16)+'px';
+  el.style.background=obj.background||'transparent';
+  el.style.backgroundImage=obj.gradient||'none';
+  el.style.boxShadow=obj.siteShadow?'0 8px 24px rgba(20,35,15,.18)':'none';
+  if(obj.type==='text'){
+    el.innerHTML=`<div class="object-content" style="white-space:pre-wrap;display:flex;align-items:center;overflow-wrap:anywhere">${escapeHTML(obj.text)}</div>`;
+  }else if(obj.type==='button'){
+    el.innerHTML=`<div class="object-content"><button style="background:${escapeHTML(obj.background)};color:${escapeHTML(obj.color)};border-radius:${obj.radius}px;font-size:${obj.fontSize}px;font-weight:600">${escapeHTML(obj.text)}</button></div>`;
+  }else if(obj.type==='image'){
+    el.innerHTML=obj.src
+      ?`<div class="object-content"><img src="${obj.src}" alt="${escapeHTML(obj.alt||'Изображение')}" draggable="false"></div>`
+      :`<div class="object-content" style="display:grid;place-items:center;text-align:center;padding:12px;color:#7b8794;font-size:12px">🖼️<br>${escapeHTML(obj.text||'Загрузите изображение')}</div>`;
+  }else if(obj.type==='input'){
+    el.innerHTML=`<div class="object-content"><input placeholder="${escapeHTML(obj.text)}" aria-label="Поле ввода" style="padding:10px;border-radius:${obj.radius}px;background:${escapeHTML(obj.background)};color:${escapeHTML(obj.color)}"></div>`;
+  }else if(obj.type==='card'){
+    el.innerHTML=`<div class="object-content tg-bubble" style="padding:16px;white-space:pre-wrap;overflow-wrap:anywhere">${escapeHTML(obj.text)}</div>`;
+  }else if(obj.type==='video'){
+    const safeVideo = /^https:\/\//i.test(String(obj.videoUrl||'')) ? obj.videoUrl : '';
+    el.innerHTML=safeVideo
+      ?`<video src="${escapeHTML(safeVideo)}" controls playsinline style="width:100%;height:100%;object-fit:cover;border-radius:${obj.radius}px;background:#111"></video>`
+      :`<div class="object-content" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:12px;text-align:center"><span style="font-size:28px">🎬</span><span style="font-size:12px">${escapeHTML(obj.text||'Добавьте URL видео')}</span></div>`;
+  }else if(obj.type==='ad'){
+    el.innerHTML=`<div class="object-content tg-bubble" style="padding:14px;white-space:pre-wrap;overflow-wrap:anywhere">${escapeHTML(obj.text)}<span class="ad-label">Реклама</span></div>`;
+  }else if(obj.type==='nav'){
+    const items=String(obj.text||'Главная | Игры | Новости').split('|').map((label,i)=>`<a href="#nav-${i}" data-nav-index="${i}" role="button">${escapeHTML(label.trim())}</a>`).join('');
+    el.innerHTML=`<nav class="nav-menu" style="background:${escapeHTML(obj.background||'#ffffff')};color:${escapeHTML(obj.color||'#1f2a20')};border-radius:${obj.radius}px;box-shadow:0 2px 8px rgba(15,25,40,.06)">${items}</nav>`;
+  }else if(obj.type==='userpanel'){
+    el.innerHTML=`<div class="user-panel" style="background:${escapeHTML(obj.background||'#ffffff')};color:${escapeHTML(obj.color||'#1f2a20')};border-radius:${obj.radius}px;box-shadow:0 2px 8px rgba(15,25,40,.06)"><div style="width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#54b3ff,#3390ec);color:#fff;font-weight:700">U</div><div class="user-copy" style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHTML(obj.text||'Пользователь')}</div><span>⌄</span></div>`;
+  }else if(obj.type==='window'){
+    const kinds={blank:'Универсальное окно',product:'Товар / предложение',ad:'Рекламное место',ai:'AI-инструмент',game:'Игра / приложение',form:'Форма / заявка',page:'Страница / профиль'};
+    el.innerHTML=`<div class="object-content" style="padding:14px;display:flex;flex-direction:column;gap:8px;align-items:stretch;overflow:hidden;border:1px solid var(--line);border-radius:${obj.radius}px;background:${escapeHTML(obj.background||'#fff')}"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.65">${escapeHTML(kinds[obj.windowKind]||kinds.blank)}</div><strong style="font-size:${Math.max(13,Number(obj.fontSize)||15)}px;overflow-wrap:anywhere">${escapeHTML(obj.title||'Окно')}</strong><div style="font-size:12px;opacity:.8;white-space:pre-wrap;overflow-wrap:anywhere;flex:1">${escapeHTML(obj.text||'Добавь описание окна')}</div><button type="button" data-window-open style="border:0;border-radius:8px;padding:7px 10px;background:var(--tg-blue);color:#fff;font:inherit;cursor:pointer;font-weight:600">${escapeHTML(obj.actionLabel||'Открыть окно')}</button></div>`;
+  }else if(obj.type==='popup'){
+    el.classList.add('popup-object');
+    const media=obj.src?`<img src="${escapeHTML(obj.src)}" alt="${escapeHTML(obj.alt||'Изображение уведомления')}">`:'';
+    const video=/^https:\/\//i.test(String(obj.videoUrl||''))?`<video src="${escapeHTML(obj.videoUrl)}" controls playsinline></video>`:'';
+    if(previewMode){
+      el.style.left='0';el.style.top='0';el.style.width='100%';el.style.height='100%';
+      el.style.background='transparent';el.style.borderRadius='0';el.style.zIndex='9999';
+      el.innerHTML=`<div class="popup-preview-shade" style="background:rgba(0,0,0,${Math.max(0,Math.min(90,Number(obj.overlayOpacity)||46))/100})"><div class="popup-preview-card" style="left:${Math.max(0,Math.min(95,obj.x/960*100))}%;top:${Math.max(0,Math.min(95,obj.y/Math.max(700,pageHeight)*100))}%;width:min(${obj.w}px,calc(100% - 24px));min-height:${Math.min(obj.h,500)}px;transform:translate(-${obj.x/960>0.5?'100%':'0'},-${obj.y/Math.max(700,pageHeight)>0.5?'100%':'0'});background:${escapeHTML(obj.background||'#fff')};color:${escapeHTML(obj.color||'#1f2a20')};border-radius:${obj.radius}px;font-size:${obj.fontSize}px"><button class="popup-close" data-popup-close>${escapeHTML(obj.closeLabel||'Закрыть')} ×</button><div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:28px">${escapeHTML(obj.text||'Уведомление')}</div>${media}${video}</div></div>`;
+    }else{
+      el.innerHTML=`<div style="height:100%;padding:14px;display:flex;flex-direction:column;justify-content:center;gap:6px;border:1px dashed #8ca4b8;background:linear-gradient(135deg,${escapeHTML(obj.background||'#fff')},#eaf3fb);border-radius:${obj.radius}px"><strong style="color:#3390ec">🔔 ${escapeHTML(obj.label||'Уведомление')}</strong><span style="font-size:11px;color:#7b8794">Всплывающий блок</span><span style="font-size:10px;color:#7b8794">ПКМ → Свойства</span></div>`;
+    }
+  }else if(obj.type==='htmlgame'){
+    if(previewMode){
+      el.classList.add('html-game');
+      el.innerHTML=`<iframe title="Изолированный HTML-блок" sandbox="allow-scripts allow-forms" referrerpolicy="no-referrer"></iframe>`;
+      const frame=el.querySelector('iframe');frame.srcdoc=buildSandboxDocument(obj.htmlCode||'',obj.htmlResponsive!==false);
+    }else{
+      el.innerHTML=`<div class="object-content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;text-align:center;background:#f7f9f6"><span style="font-size:26px">🧩</span><strong>${escapeHTML(obj.label||'HTML-блок')}</strong><span style="font-size:11px;color:#7b8794">${(obj.htmlCode||'').length} символов</span></div>`;
+    }
+  }else if(obj.type==='player'){
+    el.innerHTML='<div class="player"></div>';
+  }else if(obj.type==='platform'){
+    el.innerHTML='<div class="platform"></div>';
+  }else if(obj.type==='coin'){
+    el.innerHTML=`<div class="coin">${escapeHTML(obj.text||'+')}</div>`;
+  }
+  if(obj.id===selectedId&&!previewMode&&!obj.locked){
+    const h=document.createElement('span');h.className='resize-handle';h.title='Изменить размер';el.append(h);
+  }
+  el.addEventListener('pointerdown',e=>onObjectPointerDown(e,obj.id));
+  el.addEventListener('click',e=>{
+    if(previewMode){
+      if(obj.type==='window' && e.target.closest('[data-window-open]')){e.preventDefault();e.stopPropagation();runObjectAction(obj);return;}
+      if(e.target.closest('[data-popup-close]')){
+        e.preventDefault();e.stopPropagation();
+        const card=el.querySelector('.popup-preview-card');
+        if(card){card.classList.add('closing');setTimeout(()=>{el.style.display='none';},180);}
+        else el.style.display='none';
+        recordEvent('notification_close',{objectId:obj.id,label:obj.label});return;
+      }
+      if(obj.type!=='popup' && !e.target.closest('input,textarea,select,video,iframe'))
+        recordEvent('click',{objectId:obj.id,label:obj.label,type:obj.type});
+      if(e.target.closest('input,textarea,select,video,iframe'))return;
+      const nav=e.target.closest('[data-nav-index]');
+      if(nav){
+        e.preventDefault();e.stopPropagation();
+        const link=String(obj.link||'').trim();const label=nav.textContent.trim();
+        if(link.startsWith('#')){
+          const target=stage.querySelector(link);
+          if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+          else notify('Для пункта «'+label+'» укажи якорь в свойствах.');
+        }else if(/^https:\/\//i.test(link)){window.open(link,'_blank','noopener,noreferrer');}
+        else{notify('Пункт меню: '+label);}
+        return;
+      }
+      e.stopPropagation();runObjectAction(obj);
+    }else{e.stopPropagation();selectObject(obj.id);}
+  });
+  el.addEventListener('contextmenu',e=>{
+    if(previewMode)return;
+    e.preventDefault();e.stopPropagation();
+    selectedId=obj.id;renderAll();showObjectContextMenu(e.clientX,e.clientY,obj.id);
+  });
+  el.addEventListener('pointerenter',()=>{if(previewMode&&obj.animationTrigger==='hover'&&obj.animation!=='none')applyAnimation(obj);});
+  el.addEventListener('click',e=>{if(previewMode&&obj.animationTrigger==='click'&&obj.animation!=='none')applyAnimation(obj);});
+  el.addEventListener('keydown',e=>{
+    if(previewMode&&obj.type==='input'&&e.key==='Enter'){
+      e.preventDefault();
+      const input=el.querySelector('input');const value=String(input?.value||'').trim();
+      if(value){
+        const key=String(obj.dataKey||'').toLowerCase();
+        const type=key.includes('comment')||key.includes('коммент')?'comment':(key.includes('application')||key.includes('request')||key.includes('заяв')?'application':'message');
+        recordEvent(type,{objectId:obj.id,label:obj.label,value});
+        if(input)input.value='';
+        notify('Отправлено локально');
+      }
+    }
+  });
+  el.addEventListener('dblclick',e=>{
+    if(!previewMode&&obj.type==='text'){
+      e.stopPropagation();const val=prompt('Текст элемента',obj.text);
+      if(val!==null){markHistory();obj.text=val;renderAll();}
+    }
+  });
+  return el;
+}
+
+function buildSandboxDocument(source, responsive=true){
+  const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob: data:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">`;
+  const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';
+  const responsiveCss = responsive ? `<style>html,body{width:100%!important;min-width:0!important;max-width:100%!important;overflow-x:hidden!important;margin:0!important;box-sizing:border-box!important}*,*::before,*::after{box-sizing:border-box}img,video,svg,canvas,iframe{max-width:100%!important;height:auto}body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}</style>` : '';
+  let html=String(source||'').slice(0,500000);
+  html=html.replace(/<script\b[^>]*\bsrc\s*=\s*(["']).*?\1[^>]*>[\s\S]*?<\/script\s*>/gi,'<!-- Внешний скрипт удалён -->');
+  html=html.replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/gi,'');
+  const injected=viewport+csp+responsiveCss;
+  if(/<head\b[^>]*>/i.test(html)) return html.replace(/<head\b[^>]*>/i,m=>m+injected);
+  if(/<html\b[^>]*>/i.test(html)){
+    html=html.replace(/<html\b[^>]*>/i,m=>m+'<head><meta charset="utf-8">'+injected+'</head>');
+    return '<!doctype html>'+html;
+  }
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8">${injected}</head><body>${html}</body></html>`;
+}
+
+function showObjectContextMenu(x,y,id){
+  const menu=$('#objectContextMenu');menu.dataset.objectId=id;menu.classList.add('open');
+  menu.style.left=Math.min(x,window.innerWidth-235)+'px';
+  menu.style.top=Math.min(y,window.innerHeight-265)+'px';
+}
+function hideObjectContextMenu(){ $('#objectContextMenu').classList.remove('open'); }
+function contextAction(action){
+  const id=$('#objectContextMenu').dataset.objectId;const obj=objects.find(o=>o.id===id);if(!obj)return;
+  selectedId=id;hideObjectContextMenu();
+  if(action==='properties'){activePanel='elements';activeTab='properties';rightPanel.classList.add('open');renderPanel();return;}
+  if(action==='duplicate'){duplicateSelected();return;}
+  if(action==='delete'){deleteSelected();return;}
+  if(action==='front'){moveLayer(id,objects.length);return;}
+  if(action==='back'){moveLayer(id,-objects.length);return;}
+  if(action==='shadow'){markHistory();obj.siteShadow=!obj.siteShadow;renderAll();scheduleSave();notify('Тень '+(obj.siteShadow?'включена':'выключена'));}
+}
+
+function renderAll(){
+  stage.innerHTML='';stage.style.height=pageHeight+'px';stage.style.minHeight=pageHeight+'px';
+  stage.classList.toggle('grid-on',gridEnabled);
+  objects.slice().sort((a,b)=>(a.layer||0)-(b.layer||0)).forEach(o=>{normalizeObject(o);stage.appendChild(renderObject(o));});
+  if(!$('#centerGuideV')){const v=document.createElement('div');v.id='centerGuideV';v.className='center-guide vertical';stage.appendChild(v);}
+  if(!$('#centerGuideH')){const h=document.createElement('div');h.id='centerGuideH';h.className='center-guide horizontal';stage.appendChild(h);}
+  const stageSize=$('#stageSize'); if(stageSize) stageSize.textContent=`960 × ${pageHeight}`;
+  const stageLabel=$('#stageLabel'); if(stageLabel) stageLabel.textContent=projectType==='game'?'ИГРОВАЯ СЦЕНА / 960 PX':'СТРАНИЦА / 960 PX';
+  const objCount=$('#objectCount'); if(objCount) objCount.textContent=objects.length+' объектов';
+  const selStatus=$('#selectionStatus'); if(selStatus) selStatus.textContent=getSelected()?.label||'Ничего не выбрано';
+  const projH=$('#projectHeight'); if(projH) projH.textContent=pageHeight;
+  const projO=$('#projectObjects'); if(projO) projO.textContent=objects.length;
+  renderRulers();renderPanel();updateUndoButtons();
+  publishBridge();
+  refreshDevGames().catch(()=>{});
+}
+function selectObject(id){selectedId=id;renderAll();activePanel='elements';activeTab='properties';renderPanel();}
+function onObjectPointerDown(e,id){
+  if(previewMode)return;
+  const obj=objects.find(o=>o.id===id);if(!obj||obj.locked)return;
+  if(e.target.classList.contains('resize-handle')){
+    e.preventDefault();e.stopPropagation();
+    selectedId=id;
+    dragState={mode:'resize',id,startX:e.clientX,startY:e.clientY,startW:obj.w,startH:obj.h,zoom};
+    document.addEventListener('pointermove',onPointerMove);
+    document.addEventListener('pointerup',onPointerUp,{once:true});return;
+  }
+  if(e.button!==0)return;e.stopPropagation();
+  if(selectedId!==id){selectedId=id;activePanel='elements';activeTab='properties';renderPanel();}
+  dragState={mode:'move',id,startX:e.clientX,startY:e.clientY,startObjX:obj.x,startObjY:obj.y,zoom};
+  document.addEventListener('pointermove',onPointerMove);
+  document.addEventListener('pointerup',onPointerUp,{once:true});
+}
+function onPointerMove(e){
+  if(!dragState)return;
+  const o=objects.find(x=>x.id===dragState.id);if(!o)return;
+  if(dragState.mode==='move'){
+    o.x=Math.max(-200,Math.round(dragState.startObjX+(e.clientX-dragState.startX)/dragState.zoom));
+    o.y=Math.max(-100,Math.round(dragState.startObjY+(e.clientY-dragState.startY)/dragState.zoom));
+    const centerX=(960-o.w)/2,centerY=(pageHeight-o.h)/2;
+    const gv=$('#centerGuideV'),gh=$('#centerGuideH');
+    if(Math.abs(o.x-centerX)<=8){o.x=Math.round(centerX);if(gv){gv.style.left='50%';gv.style.display='block';}}else if(gv)gv.style.display='none';
+    if(Math.abs(o.y-centerY)<=8){o.y=Math.round(centerY);if(gh){gh.style.top=(pageHeight/2)+'px';gh.style.display='block';}}else if(gh)gh.style.display='none';
+  }else{
+    o.w=Math.max(20,Math.round(dragState.startW+(e.clientX-dragState.startX)/dragState.zoom));
+    o.h=Math.max(20,Math.round(dragState.startH+(e.clientY-dragState.startY)/dragState.zoom));
+  }
+  const el=$(`.stage-object[data-id="${o.id}"]`);
+  if(el){el.style.left=o.x+'px';el.style.top=o.y+'px';el.style.width=o.w+'px';el.style.height=o.h+'px';}
+  const selStatus=$('#selectionStatus'); if(selStatus) selStatus.textContent=o.label+` · ${Math.round(o.x)}, ${Math.round(o.y)}`;
+}
+function onPointerUp(){
+  if(dragState){
+    dragState=null;document.removeEventListener('pointermove',onPointerMove);
+    const gv=$('#centerGuideV'),gh=$('#centerGuideH');
+    if(gv)gv.style.display='none';if(gh)gh.style.display='none';
+    markHistory();renderAll();scheduleSave();
+  }
+}
+stage.addEventListener('pointerdown',e=>{if(e.target===stage&&!previewMode){selectedId=null;renderAll();}});
+stage.addEventListener('contextmenu',e=>{if(previewMode)return;const objectEl=e.target.closest('.stage-object');if(!objectEl){e.preventDefault();hideObjectContextMenu();return;}e.preventDefault();});
+document.addEventListener('click',e=>{if(!e.target.closest('#objectContextMenu'))hideObjectContextMenu();});
+$('#objectContextMenu').addEventListener('click',e=>{const btn=e.target.closest('[data-context]');if(btn)contextAction(btn.dataset.context);});
+
+document.addEventListener('contextmenu',e=>{
+  if(e.target.closest('input,textarea,[contenteditable],.context-menu,.gradient-menu,.modal-backdrop'))return;
+  e.preventDefault();
+});
+
+/* ===== Линейки ===== */
+function renderRulers(){
+  const inner=$('#siteRulerInner');if(!inner)return;
+  let html='';const maxX=1200;
+  for(let x=0;x<=maxX;x+=50){html+=`<span>${x}</span>`;}
+  inner.innerHTML=html;
+  const side=$('#sideRulerInner');if(!side)return;
+  let v='';for(let y=0;y<=pageHeight+100;y+=50){v+=`<span>${y}</span>`;}
+  side.innerHTML=v;
+}
+
+function setPanel(panel,tab){
+  activePanel=panel;
+  activeTab=tab||({elements:'add',media:'media',motion:'animation',data:'data',layers:'layers'}[panel]||'add');
+  rightPanel.classList.add('open');
+  renderPanel();
+}
+function field(label,key,value,type='text',opts={}){
+  if(type==='textarea')return `<label class="field">${label}<textarea data-prop="${key}" placeholder="${escapeHTML(opts.placeholder||'')}">${escapeHTML(value??'')}</textarea></label>`;
+  if(type==='select')return `<label class="field">${label}<select data-prop="${key}">${opts.options.map(o=>`<option value="${escapeHTML(o.value)}" ${String(value)===String(o.value)?'selected':''}>${escapeHTML(o.label)}</option>`).join('')}</select></label>`;
+  return `<label class="field">${label}<input data-prop="${key}" type="${type}" value="${escapeHTML(value??'')}" ${opts.min!==undefined?`min="${opts.min}"`:''} ${opts.max!==undefined?`max="${opts.max}"`:''} ${opts.step!==undefined?`step="${opts.step}"`:''} ${opts.placeholder?`placeholder="${escapeHTML(opts.placeholder)}"`:''}></label>`;
+}
+function renderPanel(){
+  const panelTitle=$('#panelTitle');
+  if(panelTitle) panelTitle.textContent=({elements:'Элементы',media:'Медиатека',motion:'Анимация',data:'Данные',layers:'Слои'}[activePanel]||'Инструменты');
+  $$('#panelTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===activeTab));
+  const obj=getSelected();
+  if(activePanel==='layers'||activeTab==='layers'){panelContent.innerHTML=renderLayers();return;}
+  if(activePanel==='media'||activeTab==='media'){panelContent.innerHTML=renderMedia();return;}
+  if(activePanel==='motion'||activeTab==='animation'){panelContent.innerHTML=renderMotion(obj);return;}
+  if(activePanel==='data'||activeTab==='data'){panelContent.innerHTML=renderData(obj);return;}
+  if(activeTab==='properties'){panelContent.innerHTML=renderProperties(obj);return;}
+  panelContent.innerHTML=renderAdd();
+}
+function renderAdd(){
+  const devGames = devGamesCache || [];
+  return `<div class="section">
+    <div class="mini-title">Быстро добавить</div>
+    <div class="field-row">
+      <button class="smallbtn" data-add="text"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-text"/></svg>Текст</button>
+      <button class="smallbtn" data-add="button"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-button"/></svg>Кнопка</button>
+      <button class="smallbtn" data-add="image"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-image"/></svg>Изображение</button>
+      <button class="smallbtn" data-add="card"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-card"/></svg>Карточка</button>
+      <button class="smallbtn" data-add="input"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-input"/></svg>Поле ввода</button>
+      <button class="smallbtn" data-add="video"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-video"/></svg>Видео</button>
+      <button class="smallbtn" data-add="ad"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-megaphone"/></svg>Реклама</button>
+      <button class="smallbtn" data-add="nav"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-nav"/></svg>Бар-меню</button>
+      <button class="smallbtn" data-add="userpanel"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-user"/></svg>Панель польз.</button>
+      <button class="smallbtn" data-add="htmlgame"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-html"/></svg>HTML-блок</button>
+      <button class="smallbtn" data-add="window"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-window"/></svg>Окно</button>
+      <button class="smallbtn" data-add="popup"><svg width="14" height="14" style="vertical-align:-2px;margin-right:4px"><use href="#i-bell"/></svg>Уведомление</button>
+    </div>
+    ${projectType==='game'?`<div class="mini-title" style="margin-top:10px">Игровые объекты</div><div class="field-row"><button class="smallbtn" data-add="player">🔵 Игрок</button><button class="smallbtn" data-add="platform">🟩 Платформа</button><button class="smallbtn" data-add="coin">🟡 Монета</button></div>`:''}
+    <div class="mini-title" style="margin-top:10px">Тип проекта</div>
+    <label class="field">Рабочая среда
+      <select id="projectTypeSelect">
+        <option value="site" ${projectType==='site'?'selected':''}>Страница сайта</option>
+        <option value="game" ${projectType==='game'?'selected':''}>2D-игра / сцена</option>
+      </select>
+    </label>
+    ${devGames.length?`
+      <div class="mini-title" style="margin-top:10px">Игры разработчика</div>
+      <div class="object-list">
+        ${devGames.slice(-8).reverse().map(g=>`<div class="layer-row">
+          <span>🧩</span>
+          <button class="layer-name" data-insert-game="${escapeHTML(g.id)}" title="Вставить HTML-блок">${escapeHTML(g.title||'Без названия')}</button>
+        </div>`).join('')}
+      </div>
+    `:`<div class="mini-title" style="margin-top:10px">Игры разработчика</div><div class="empty">Игры из Панели разработчика появятся здесь.</div>`}
+  </div>`;
+}
+function renderProperties(o){
+  if(!o)return `<div class="empty">Выбери объект или добавь новый.</div><button class="action-btn" data-add="text">＋ Добавить текст</button>`;
+  return `<div class="section">
+    <div class="mini-title">Объект · ${escapeHTML(o.type)}</div>
+    ${field('Название','label',o.label)}
+    ${field('Якорь / ID','anchorId',o.anchorId||o.id,'text',{placeholder:'section-2'})}
+    ${field('Текст','text',o.text,'textarea')}
+    <div class="field-row">${field('X','x',o.x,'number',{min:-5000,max:5000})}${field('Y','y',o.y,'number',{min:-5000,max:50000})}</div>
+    <div class="field-row">${field('Ширина','w',o.w,'number',{min:20,max:960})}${field('Высота','h',o.h,'number',{min:20,max:50000})}</div>
+    <div class="field-row">${field('Поворот °','rotation',o.rotation,'number',{min:-360,max:360})}${field('Прозрачность %','opacity',o.opacity,'number',{min:0,max:100})}</div>
+    <div class="field-row">${field('Цвет текста','color',o.color,'color')}${field('Фон','background',isColor(o.background)?o.background:'#ffffff','color')}</div>
+    <div class="field-row">${field('Размер шрифта','fontSize',o.fontSize,'number',{min:8,max:120})}${field('Скругление','radius',o.radius,'number',{min:0,max:100})}</div>
+    ${o.type==='image'?`${field('Alt','alt',o.alt||'Изображение')}${field('Изображение','src',o.src||'','text',{placeholder:'Загрузите файл'})}<button class="smallbtn" data-upload-selected>↑ Заменить</button>`:''}
+    ${['button','ad','text','image','card','nav','userpanel'].includes(o.type)?field('Ссылка','link',o.link||'','text',{placeholder:'#section-2 или https://...' }):''}
+    ${o.type==='nav'?'<div class="code-hint">Пункты через |. Пример: Главная | Игры</div>':''}
+    ${o.type==='window'?`${field('Заголовок окна','title',o.title||'Новое окно')}${field('Описание','text',o.text||'','textarea')}<label class="field">Назначение<select data-prop="windowKind"><option value="blank" ${o.windowKind==='blank'?'selected':''}>Универсальный</option><option value="product" ${o.windowKind==='product'?'selected':''}>Товар</option><option value="ad" ${o.windowKind==='ad'?'selected':''}>Реклама</option><option value="ai" ${o.windowKind==='ai'?'selected':''}>AI</option><option value="game" ${o.windowKind==='game'?'selected':''}>Игра</option><option value="form" ${o.windowKind==='form'?'selected':''}>Форма</option><option value="page" ${o.windowKind==='page'?'selected':''}>Страница</option></select></label>${field('Текст кнопки','actionLabel',o.actionLabel||'Открыть окно')}`:''}
+    ${o.type==='popup'?`${field('URL видео','videoUrl',o.videoUrl||'','text',{placeholder:'https://...'})}${field('Затемнение %','overlayOpacity',o.overlayOpacity??46,'number',{min:0,max:90})}${field('Кнопка закрытия','closeLabel',o.closeLabel||'Закрыть')}`:''}
+    ${o.type==='htmlgame'?`<label class="field">HTML-код<textarea data-prop="htmlCode" spellcheck="false" style="min-height:200px;font:11px/1.45 ui-monospace,monospace">${escapeHTML(o.htmlCode||'')}</textarea></label><input type="file" id="htmlFileUpload" accept=".html,.htm,text/html" hidden><button class="smallbtn" id="loadHtmlFileBtn">↑ Загрузить HTML</button><label class="field">Адаптивность<select data-prop="htmlResponsive"><option value="true" ${o.htmlResponsive!==false?'selected':''}>Включена</option><option value="false" ${o.htmlResponsive===false?'selected':''}>Выключена</option></select></label>`:''}
+    <label class="field">Тень
+      <select data-prop="siteShadow">
+        <option value="false" ${!o.siteShadow?'selected':''}>Выключена</option>
+        <option value="true" ${o.siteShadow?'selected':''}>Включена</option>
+      </select>
+    </label>
+    <label class="field">Видимость
+      <select data-prop="visible">
+        <option value="true" ${o.visible?'selected':''}>Видимый</option>
+        <option value="false" ${!o.visible?'selected':''}>Скрытый</option>
+      </select>
+    </label>
+    <label class="field">Блокировка
+      <select data-prop="locked">
+        <option value="false" ${!o.locked?'selected':''}>Можно перемещать</option>
+        <option value="true" ${o.locked?'selected':''}>Заблокировать</option>
+      </select>
+    </label>
+    <div class="field-row"><button class="smallbtn" data-duplicate><svg width="13" height="13" style="vertical-align:-2px;margin-right:4px"><use href="#i-duplicate"/></svg>Дублировать</button><button class="smallbtn" data-delete style="color:#e53935"><svg width="13" height="13" style="vertical-align:-2px;margin-right:4px"><use href="#i-trash"/></svg>Удалить</button></div>
+  </div>`;
+}
+function isColor(s){return /^#[0-9a-f]{6}$/i.test(String(s||''));}
+function renderLayers(){
+  if(!objects.length)return '<div class="empty">Слои появятся после добавления объектов.</div>';
+  const sorted=[...objects].sort((a,b)=>(b.layer||0)-(a.layer||0));
+  return `<div class="section">
+    <div class="mini-title">Слои · сверху вниз</div>
+    <div class="object-list">
+      ${sorted.map(o=>`<div class="layer-row ${o.id===selectedId?'active':''}">
+        <button class="tiny" data-layer-visible="${o.id}" title="Видимость">${o.visible?'◉':'○'}</button>
+        <button class="layer-name" data-select="${o.id}">${escapeHTML(o.label||o.type)}</button>
+        <button class="tiny" data-layer-up="${o.id}" title="Выше">↑</button>
+        <button class="tiny" data-layer-down="${o.id}" title="Ниже">↓</button>
+      </div>`).join('')}
+    </div>
+    <button class="smallbtn" data-duplicate ${!getSelected()?'disabled':''}>📑 Дублировать</button>
+    <button class="smallbtn" data-delete ${!getSelected()?'disabled':''}>🗑️ Удалить</button>
+  </div>`;
+}
+function renderMedia(){
+  const imgs=objects.filter(o=>o.type==='image'&&o.src);
+  return `<div class="section">
+    <div class="mini-title">Медиатека проекта</div>
+    <button class="action-btn primary" id="panelUploadBtn">↑ Загрузить изображения</button>
+    <div class="empty">PNG, JPG, WEBP, GIF · до 5 МБ.</div>
+    ${imgs.length?`<div class="object-list">${imgs.map(o=>`<div class="layer-row"><span>🖼️</span><button class="layer-name" data-select="${o.id}">${escapeHTML(o.label)}</button></div>`).join('')}</div>`:'<div class="empty">Изображений пока нет.</div>'}
+  </div>`;
+}
+function renderMotion(o){
+  return `<div class="section">
+    <div class="mini-title">Анимация</div>
+    ${o?`<div class="pill">${escapeHTML(o.label)}</div>
+    <label class="field">Эффект<select data-prop="animation">
+      <option value="none" ${o.animation==='none'?'selected':''}>Без анимации</option>
+      <option value="fade" ${o.animation==='fade'?'selected':''}>Появление</option>
+      <option value="float" ${o.animation==='float'?'selected':''}>Плавное движение</option>
+      <option value="pulse" ${o.animation==='pulse'?'selected':''}>Пульсация</option>
+      <option value="bounce" ${o.animation==='bounce'?'selected':''}>Подпрыгивание</option>
+    </select></label>
+    <label class="field">Триггер<select data-prop="animationTrigger">
+      <option value="load" ${o.animationTrigger==='load'?'selected':''}>При загрузке</option>
+      <option value="hover" ${o.animationTrigger==='hover'?'selected':''}>При наведении</option>
+      <option value="click" ${o.animationTrigger==='click'?'selected':''}>При клике</option>
+    </select></label>`:'<div class="empty">Выбери объект.</div>'}
+    <button class="smallbtn" id="testAnimationBtn">▶️ Проверить</button>
+  </div>`;
+}
+function renderData(o){
+  return `<div class="section">
+    <div class="mini-title">Данные</div>
+    ${o?`<div class="pill">${escapeHTML(o.label)}</div>${field('Ключ','dataKey',o.dataKey||'')}${field('Значение','dataValue',o.dataValue||'')}`:'<div class="empty">Выбери объект.</div>'}
+    <button class="smallbtn" id="dataDemoBtn">Проверить</button>
+  </div>`;
+}
+
+/* ===== Photoshop-style нижний док (п.1, п.2, п.6) ===== */
+const DOCK_GROUPS = [
+  {name:'Файл', items:[
+    {id:'settings', icon:'i-settings', label:'Настройки', action:()=>openProjectModal()},
+    {id:'open-games', icon:'i-gamepad', label:'Игры', action:()=>openDevGamesModal()}
+  ]},
+  {name:'Добавить', items:[
+    {id:'add-text', icon:'i-text', label:'Текст', action:()=>addObject('text')},
+    {id:'add-button', icon:'i-button', label:'Кнопка', action:()=>addObject('button')},
+    {id:'add-image', icon:'i-image', label:'Картинка', action:()=>$('#imageUpload').click()},
+    {id:'add-input', icon:'i-input', label:'Поле', action:()=>addObject('input')},
+    {id:'add-card', icon:'i-card', label:'Карточка', action:()=>addObject('card')},
+    {id:'add-video', icon:'i-video', label:'Видео', action:()=>addObject('video')},
+    {id:'add-nav', icon:'i-nav', label:'Меню', action:()=>addObject('nav')},
+    {id:'add-user', icon:'i-user', label:'Панель', action:()=>addObject('userpanel')},
+    {id:'add-game', icon:'i-html', label:'HTML', action:()=>addObject('htmlgame')},
+    {id:'add-window', icon:'i-window', label:'Окно', action:()=>addObject('window')},
+    {id:'add-popup', icon:'i-bell', label:'Уведом.', action:()=>addObject('popup')}
+  ]},
+  {name:'Вид', items:[
+    {id:'layers', icon:'i-layers', label:'Слои', action:()=>setPanel('layers','layers')},
+    {id:'grid', icon:'i-grid', label:'Сетка', action:()=>toggleGrid()},
+    {id:'page', icon:'i-plus', label:'+500', action:()=>extendPage()}
+  ]},
+  {name:'Пользователь', items:[
+    {id:'profile', icon:'i-user', label:'Профиль', action:()=>{ $('#profilePopover').classList.toggle('open'); }, profile:true, badge:true}
+  ]}
+];
+
+const GRADIENT_PRESETS = [
+  'linear-gradient(135deg, #3390ec, #b7ed91)',
+  'linear-gradient(135deg, #ff9a9e, #fad0c4)',
+  'linear-gradient(135deg, #a1c4fd, #c2e9fb)',
+  'linear-gradient(135deg, #ffecd2, #fcb69f)',
+  'linear-gradient(135deg, #667eea, #764ba2)'
+];
+
+const DOCK_STYLE_KEY='leafStudio.dockStyles.v1';
+let dockStyles = {};
+try{dockStyles = JSON.parse(localStorage.getItem(DOCK_STYLE_KEY)||'{}') || {};}catch(_){dockStyles={};}
+function saveDockStyles(){try{localStorage.setItem(DOCK_STYLE_KEY,JSON.stringify(dockStyles));}catch(_){}}
+
+function renderDock(){
+  const track = $('#dockTrack'); if(!track) return;
+  const groupsHTML = DOCK_GROUPS.map((group, gi)=>{
+    const itemsHTML = group.items.map(it=>{
+      const style = dockStyles[it.id] || {};
+      const bg = style.bg || '';
+      const anim = style.anim ? 'grad-anim' : '';
+      const inline = bg ? `style="background:${bg};"` : '';
+      const activeCls = (activePanel==='layers' && it.id==='layers')?'active':'';
+      return `<button class="dock-cell ${activeCls} ${it.profile?'profile':''} ${anim}" data-dock-id="${it.id}" ${inline} title="${it.label}" aria-label="${it.label}">
+        <span class="dock-icon"><svg><use href="#${it.icon}"/></svg></span>
+        <span class="dock-label">${it.label}</span>
+        ${it.badge?'<span class="badge" id="dockProfileBadge">0</span>':''}
+        <span class="tooltip">${it.label}</span>
+      </button>`;
+    }).join('');
+    return `<div class="dock-group" data-group="${gi}">${itemsHTML}</div>`;
+  }).join('');
+  track.innerHTML = groupsHTML + groupsHTML;
+  bindDockCells(track);
+  track.querySelectorAll('.dock-cell').forEach(cell=>{
+    cell.classList.remove('active');
+    if(activePanel==='layers' && cell.dataset.dockId==='layers') cell.classList.add('active');
+    if(previewMode && cell.dataset.dockId==='profile') {} // profile remains
+  });
+  updateInboxBadge();
+}
+function bindDockCells(root){
+  root.querySelectorAll('.dock-cell').forEach(cell=>{
+    const id=cell.dataset.dockId;
+    cell.addEventListener('click',e=>{
+      const found = DOCK_GROUPS.flatMap(g=>g.items).find(x=>x.id===id);
+      if(found) found.action();
+    });
+    cell.addEventListener('contextmenu',e=>{
+      if(id==='profile'){ e.preventDefault(); e.stopPropagation(); openProfileMenu(e.clientX,e.clientY); return; }
+      e.preventDefault();
+      openGradientMenu(e.clientX, e.clientY, cell, id);
+    });
+    let longTimer=null;
+    cell.addEventListener('touchstart',()=>{
+      if(id==='profile'){
+        longTimer=setTimeout(()=>{const r=cell.getBoundingClientRect();openProfileMenu(r.left,r.top-4);},600);
+        return;
+      }
+      longTimer=setTimeout(()=>{
+        const rect=cell.getBoundingClientRect();
+        openGradientMenu(rect.left, rect.top, cell, id);
+      }, 600);
+    }, {passive:true});
+    cell.addEventListener('touchend',()=>{clearTimeout(longTimer);}, {passive:true});
+    cell.addEventListener('touchmove',()=>{clearTimeout(longTimer);}, {passive:true});
+  });
+}
+function toggleGrid(){
+  gridEnabled=!gridEnabled;
+  stage.classList.toggle('grid-on',gridEnabled);
+  const g=$('#gridBtn'); if(g) g.classList.toggle('active',gridEnabled);
+  renderDock();
+}
+
+/* Меню градиента */
+let gradMenuCell = null, gradMenuId = null;
+function openGradientMenu(x,y,cell,id){
+  gradMenuCell = cell; gradMenuId = id;
+  const menu = $('#gradientMenu');
+  const grid = $('#gradientGrid');
+  grid.innerHTML = GRADIENT_PRESETS.map((g,i)=>`<div class="gradient-swatch" data-preset="${i}" style="background:${g}"></div>`).join('');
+  grid.querySelectorAll('[data-preset]').forEach(sw=>{
+    sw.addEventListener('click',()=>{
+      const g = GRADIENT_PRESETS[Number(sw.dataset.preset)];
+      applyGradientToCell(id, g);
+    });
+  });
+  menu.classList.add('open');
+  const w=menu.offsetWidth||250, h=menu.offsetHeight||260;
+  menu.style.left = Math.min(x, window.innerWidth - w - 8)+'px';
+  menu.style.top = Math.min(y - h, window.innerHeight - h - 8) > 8 ? Math.min(y - h, window.innerHeight - h - 8) : (y+8)+'px';
+}
+function closeGradientMenu(){ $('#gradientMenu').classList.remove('open'); gradMenuCell=null; gradMenuId=null; }
+document.addEventListener('click',e=>{ if(!e.target.closest('#gradientMenu')) closeGradientMenu(); });
+
+function applyGradientToCell(id, gradient, anim=false){
+  if(!id) return;
+  dockStyles[id] = {bg: gradient, anim: !!anim};
+  saveDockStyles();
+  refreshCellStyle(id, gradient, anim);
+  closeGradientMenu();
+  notify('Градиент применён');
+}
+function refreshCellStyle(id, gradient, anim){
+  const cells = $$(`.dock-cell[data-dock-id="${id}"]`);
+  cells.forEach(c=>{
+    if(gradient){
+      c.style.background = gradient;
+      c.classList.toggle('grad-anim', !!anim);
+      c.style.color = '#fff';
+    }else{
+      c.style.background = '';
+      c.classList.remove('grad-anim');
+      c.style.color = '';
+    }
+  });
+}
+function resetGradient(id){
+  delete dockStyles[id]; saveDockStyles();
+  refreshCellStyle(id, null, false);
+  closeGradientMenu();
+  notify('Фон ячейки сброшен');
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const applyBtn = $('#gradApply');
+  if(applyBtn) applyBtn.addEventListener('click',()=>{
+    const c1=$('#gradColor1').value, c2=$('#gradColor2').value;
+    const custom=$('#gradCustom').value.trim();
+    const grad = custom || `linear-gradient(135deg, ${c1}, ${c2})`;
+    applyGradientToCell(gradMenuId, grad, false);
+  });
+  const animBtn = $('#gradAnimToggle');
+  if(animBtn) animBtn.addEventListener('click',()=>{
+    if(!gradMenuId) return;
+    const cur = dockStyles[gradMenuId]?.bg || `linear-gradient(135deg, ${$('#gradColor1').value}, ${$('#gradColor2').value})`;
+    applyGradientToCell(gradMenuId, cur, true);
+  });
+  const resetBtn = $('#gradReset');
+  if(resetBtn) resetBtn.addEventListener('click',()=>{ if(gradMenuId) resetGradient(gradMenuId); });
+});
+
+/* Collapse */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const t=$('#dockToggle');
+  if(t) t.addEventListener('click',()=>{
+    const d=$('#dock');
+    d.classList.toggle('collapsed');
+    const svg=t.querySelector('use');
+    if(svg) svg.setAttribute('href', d.classList.contains('collapsed') ? '#i-chevron-up' : '#i-chevron-down');
+  });
+});
+
+function openProjectModal(){
+  const body=`<div class="admin-dashboard">
+    <div class="telegram-bubble">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="pill">${projectType==='game'?'◈ 2D-игра':'▤ Сайт'}</span>
+        <span class="pill">${pageHeight} px</span>
+        <span class="pill">${objects.length} объектов</span>
+      </div>
+      <p style="margin-top:8px;color:var(--muted);font-size:12px">Управление проектом вынесено в правую панель. Здесь — быстрые действия.</p>
+    </div>
+    <div class="admin-actions">
+      <button data-proj-action="preview">▶️ Предпросмотр</button>
+      <button data-proj-action="export">📤 Экспорт HTML</button>
+      <button data-proj-action="developer">⚙️ Панель разработчика</button>
+    </div>
+  </div>`;
+  openModal('Настройки проекта','Проект · локальный режим',body,'Готово');
+  $('#modalBody').onclick=e=>{
+    const b=e.target.closest('[data-proj-action]'); if(!b) return;
+    const a=b.dataset.projAction;
+    $('#modalBackdrop').classList.remove('open');
+    if(a==='preview') togglePreview();
+    else if(a==='export') exportProject();
+    else if(a==='developer') openDeveloperPanel();
+  };
+}
+
+function openDevGamesModal(){
+  let games=[]; try{games=JSON.parse(localStorage.getItem(DEVELOPER_GAMES_KEY)||'[]');if(!Array.isArray(games))games=[];}catch(_){games=[];}
+  const list = games.filter(g=>g && g.id && g.title && typeof g.htmlCode==='string' && g.htmlCode.trim());
+  const body = list.length ? `
+    <div style="display:grid;gap:8px;max-height:60vh;overflow:auto">
+      ${list.map(g=>`<div style="padding:10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel2)">
+        <strong style="display:block;font-size:13px">${escapeHTML(g.title)}</strong>
+        <div style="font-size:11px;color:var(--muted);margin:4px 0">${escapeHTML(g.category||'')} · v${escapeHTML(g.version||'1.0.0')}</div>
+        <button class="action-btn primary" data-insert-dev-game="${escapeHTML(g.id)}">🪟 Вставить на борд</button>
+      </div>`).join('')}
+    </div>` : `<div class="empty">Пока нет игр из панели разработчика. Открой <a href="index.html">index.html</a> → Мои игры → Сохранить с HTML-кодом.</div>`;
+  openModal('Игры разработчика', 'Выбери игру для вставки на борд.', body, 'Готово');
+  $('#modalBody').onclick = e=>{
+    const b = e.target.closest('[data-insert-dev-game]'); if(!b) return;
+    const game = list.find(x=>x.id===b.dataset.insertDevGame);
+    if(!game){notify('Игра не найдена');return;}
+    addObject('htmlgame',{label:game.title, htmlCode:game.htmlCode, htmlResponsive:true});
+    $('#modalBackdrop').classList.remove('open');
+    notify('Игра «'+game.title+'» вставлена на борд');
+  };
+}
+
+function renderProjectDashboard(){
+  const projectName = $('#projectName')?.value || 'Без названия';
+  const totalObjects = objects.length;
+  const visibleObjects = objects.filter(o=>o.visible).length;
+  const hasGame = objects.some(o=>o.type==='htmlgame');
+  const hasPlayer = objects.some(o=>o.type==='player');
+  const hasNav = objects.some(o=>o.type==='nav');
+  const hasPopup = objects.some(o=>o.type==='popup');
+  const realEvents = siteEvents.filter(e=>!e.isTest).length;
+  const inbox = siteEvents.filter(e=>!e.isTest&&['message','comment','application'].includes(e.type)).length;
+  const checks = [
+    ['Название проекта', !!projectName && projectName!=='Без названия'],
+    ['Объекты на странице', totalObjects>0],
+    ['Навигация или панель', hasNav || objects.some(o=>o.type==='userpanel')],
+    ['HTML-блок или сцена', hasGame || hasPlayer],
+    ['Профиль разработчика', !!localStorage.getItem('leafStudio.developer.v1')],
+    ['TON-кошелёк', !!localStorage.getItem('leafStudio.developerWallet.v1')],
+  ];
+  const readyPct = Math.round(checks.filter(c=>c[1]).length/checks.length*100);
+  const body = `<div class="admin-dashboard">
+    <div class="telegram-bubble" style="display:flex;flex-direction:column;gap:4px">
+      <strong style="font-size:16px">${escapeHTML(projectName)}</strong>
+      <span style="font-size:12px;color:var(--muted)">${projectType==='game'?'◈ 2D-игра':'▤ Сайт'} · ${pageHeight} px · ${totalObjects} объектов (${visibleObjects} видимых)</span>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><strong>${totalObjects}</strong><span>Объектов</span></div>
+      <div class="stat-card"><strong>${hasGame?'Да':'—'}</strong><span>HTML-блок</span></div>
+      <div class="stat-card"><strong>${inbox}</strong><span>Входящих</span></div>
+      <div class="stat-card"><strong>${realEvents}</strong><span>Событий</span></div>
+      <div class="stat-card"><strong>${readyPct}%</strong><span>Готовность</span></div>
+      <div class="stat-card"><strong>${hasPopup?'Да':'—'}</strong><span>Уведомления</span></div>
+    </div>
+    <div class="mini-title">Чек-лист публикации</div>
+    <div class="telegram-bubble">
+      ${checks.map(([label,ok])=>`<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0">
+        <span style="width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:${ok?'#e8f7e1':'var(--panel2)'};color:${ok?'#2d6b23':'var(--muted)'};font-size:11px;font-weight:700">${ok?'✓':'•'}</span>
+        <span style="color:${ok?'var(--text)':'var(--muted)'}">${label}</span>
+      </div>`).join('')}
+    </div>
+    <div class="admin-actions">
+      <button data-dashboard-action="preview">▶️ Предпросмотр</button>
+      <button data-dashboard-action="export">📤 Экспорт HTML</button>
+      <button data-dashboard-action="developer">⚙️ Панель разработчика</button>
+      <button data-dashboard-action="analytics">📈 Статистика</button>
+    </div>
+  </div>`;
+  openModal('Дашборд проекта', 'Сводка по проекту и путь к публикации.', body, 'Готово');
+  $('#modalBody').onclick = e=>{
+    const b = e.target.closest('[data-dashboard-action]'); if(!b) return;
+    const a = b.dataset.dashboardAction;
+    if(a==='preview'){ $('#modalBackdrop').classList.remove('open'); togglePreview(); return; }
+    if(a==='export'){ $('#modalBackdrop').classList.remove('open'); exportProject(); return; }
+    if(a==='developer'){ $('#modalBackdrop').classList.remove('open'); openDeveloperPanel(); return; }
+    if(a==='analytics'){ $('#modalBackdrop').classList.remove('open'); renderAdminDashboard('analytics'); return; }
+  };
+}
+
+function openDeveloperPanel(){
+  publishBridge();
+  try { window.location.href = new URL(DEVELOPER_PAGE, window.location.href).href; }
+  catch(_) { window.location.href = DEVELOPER_PAGE; }
+}
+function publishBridge(){
+  try {
+    const payload = {
+      projectName: $('#projectName')?.value || 'Мой проект',
+      projectType, pageHeight,
+      objectCount: objects.length,
+      hasGame: objects.some(o=>o.type==='htmlgame'),
+      hasPlayer: objects.some(o=>o.type==='player'),
+      source: 'LEAF Studio Board',
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(BRIDGE_KEY, JSON.stringify(payload));
+  } catch(_) {}
+}
+
+function openGamesDB(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('IndexedDB not supported'));return;}
+    const req = indexedDB.open(GAMES_DB, 1);
+    req.onupgradeneeded = ()=>{
+      const db = req.result;
+      if(!db.objectStoreNames.contains(GAMES_STORE)){
+        const store = db.createObjectStore(GAMES_STORE, {keyPath:'id'});
+        store.createIndex('updatedAt','updatedAt');
+        store.createIndex('title','title');
+      }
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+async function dbGetAllGames(){
+  try{
+    const db = await openGamesDB();
+    return await new Promise((res,rej)=>{
+      const tx = db.transaction(GAMES_STORE,'readonly');
+      const req = tx.objectStore(GAMES_STORE).getAll();
+      req.onsuccess = ()=>res(req.result||[]);
+      req.onerror = ()=>rej(req.error);
+    });
+  }catch(_){ return []; }
+}
+async function refreshDevGames(){
+  const list = await dbGetAllGames();
+  list.sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+  devGamesCache = list;
+  if(activePanel==='elements' && activeTab==='add'){ renderPanel(); }
+}
+
+function renderProfileModal(key){
+  if(key==='analytics'||key==='inbox'){renderAdminDashboard(key);return;}
+  if(key==='dashboard'){renderProjectDashboard();return;}
+  if(key==='developer'){openDeveloperPanel();return;}
+  if(key==='preview'){togglePreview();return;}
+  if(key==='export'){exportProject();return;}
+  const map={
+    builder:['Конструктор','Редактор текущего проекта.'],
+    sites:['Мои сайты и игры','Локальный список. Игры из Панели разработчика вставляются как HTML-блоки.'],
+    archive:['Архив проектов','Экспорт JSON.'],
+    ads:['Реклама','Визуальные блоки; биллинг требует сервера.'],
+    store:['Магазин','Локальный прототип.'],
+    wallet:['Кошелёк TON','TON Connect не подключён. Открой «Панель разработчика».'],
+    plans:['Тарифы','Требуют сервера.']
+  };
+  const item=map[key]||map.builder;openModal(item[0],item[1],null,'Понятно');
+}
+
+function renderAdminDashboard(mode='analytics'){
+  const title=mode==='inbox'?'Сообщения пользователей':'Статистика сайта';
+  const real=siteEvents.filter(e=>!e.isTest),tests=siteEvents.filter(e=>e.isTest);
+  const counts={
+    views:real.filter(e=>e.type==='view').length,
+    clicks:real.filter(e=>e.type==='click').length,
+    likes:real.filter(e=>e.type==='like').length,
+    comments:real.filter(e=>e.type==='comment').length,
+    forms:real.filter(e=>e.type==='application').length,
+    messages:real.filter(e=>e.type==='message').length
+  };
+  const relevant=siteEvents.filter(e=>mode==='inbox'?['message','comment','application'].includes(e.type):true).slice().reverse().slice(0,80);
+  const rows=relevant.map(e=>`<div class="admin-row">
+    <strong>${escapeHTML(({message:'Сообщение',comment:'Комментарий',application:'Заявка',click:'Клик',like:'Лайк',view:'Просмотр',notification_close:'Закрытие'}[e.type]||e.type))} ${e.isTest?'<span class="pill">ТЕСТ</span>':'<span class="pill">ЛОКАЛЬНО</span>'}</strong>
+    <p>${escapeHTML(e.detail.value||e.detail.text||e.detail.label||e.detail.user||'Событие')}</p>
+    <small>${escapeHTML(new Date(e.at).toLocaleString('ru-RU'))} · ${escapeHTML(e.project||'Сайт')}</small>
+  </div>`).join('');
+  const body=`<div class="admin-dashboard">
+    <div class="stat-grid">
+      ${[['Просмотры',counts.views],['Клики',counts.clicks],['Лайки',counts.likes],['Комментарии',counts.comments],['Заявки',counts.forms],['Сообщения',counts.messages],['Тест',tests.length]].map(([label,n])=>`<div class="stat-card"><strong>${n}</strong><span>${label}</span></div>`).join('')}
+    </div>
+    <div class="telegram-bubble">
+      <strong>Тест-боты</strong>
+      <div class="admin-actions" style="margin-top:8px">
+        <button data-admin-action="bot1">1 бот</button>
+        <button data-admin-action="bots10">10 ботов</button>
+        <button data-admin-action="clearTests">Очистить тесты</button>
+        <button data-admin-action="exportEvents">Экспорт JSON</button>
+      </div>
+    </div>
+    <div class="admin-actions">
+      <button data-admin-action="newMessage">+ Тестовое сообщение</button>
+      <button data-admin-action="clearAll">Очистить журнал</button>
+    </div>
+    <div class="mini-title">${mode==='inbox'?'Входящие':'События'}</div>
+    <div class="admin-list">${rows||'<div class="empty">Пока нет событий.</div>'}</div>
+  </div>`;
+  openModal(title,'Данные проекта · '+($('#projectName')?.value||'Мой сайт'),body,'Готово');
+  $('#modalBody').onclick=e=>{
+    const b=e.target.closest('[data-admin-action]');if(!b)return;
+    const action=b.dataset.adminAction;
+    if(action==='bot1'||action==='bots10'){
+      const n=action==='bot1'?1:10;
+      for(let i=0;i<n;i++){
+        const bot='Тест-бот '+String(i+1).padStart(2,'0');
+        recordEvent('view',{user:bot},true);
+        recordEvent('click',{user:bot,label:'Кнопка'},true);
+        if(i%2===0)recordEvent('like',{user:bot,text:'Нравится'},true);
+        if(i%3===0)recordEvent('comment',{user:bot,value:'Комментарий от '+bot},true);
+        if(i%4===0)recordEvent('application',{user:bot,value:'Заявка от '+bot},true);
+        if(i%2===1)recordEvent('message',{user:bot,value:'Сообщение от '+bot},true);
+      }
+      renderAdminDashboard(mode);return;
+    }
+    if(action==='clearTests'){siteEvents=siteEvents.filter(x=>!x.isTest);saveEvents();renderAdminDashboard(mode);return;}
+    if(action==='clearAll'){if(confirm('Удалить все события?')){siteEvents=[];saveEvents();renderAdminDashboard(mode);}return;}
+    if(action==='newMessage'){recordEvent('message',{user:'Тест',value:'Проверка'},true);renderAdminDashboard('inbox');return;}
+    if(action==='exportEvents'){
+      const blob=new Blob([JSON.stringify(siteEvents,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');
+      a.href=url;a.download='leaf-site-events.json';a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);notify('Журнал экспортирован');
+    }
+  };
+}
+function openModal(title,text,bodyHTML=null,actionLabel='Понятно',onAction=null){
+  $('#modalTitle').textContent=title;
+  $('#modalText').textContent=text;
+  $('#modalBody').innerHTML=bodyHTML||'';
+  $('#modalAction').textContent=actionLabel;
+  $('#modalBackdrop').classList.add('open');
+  $('#modalAction').onclick=()=>{if(onAction)onAction();$('#modalBackdrop').classList.remove('open');};
+}
+function updateModeUI(){
+  const badge=$('#projectTypeBadge'); if(badge) badge.textContent=projectType==='site'?'Сайт':'2D-игра';
+  const lbl=$('#stageLabel'); if(lbl) lbl.textContent=projectType==='game'?'ИГРОВАЯ СЦЕНА / 960 PX':'СТРАНИЦА / 960 PX';
+}
+function safeLink(value){
+  const link=String(value||'').trim();
+  if(!link) return '#';
+  if(link.startsWith('#'))return link;
+  if(/^https:\/\//i.test(link)||/^mailto:/i.test(link)||/^tel:/i.test(link))return link;
+  if(link.startsWith('/'))return link;
+  return '#';
+}
+function runObjectAction(o){
+  if(o.type==='window'){
+    const kinds={blank:'Универсальное окно',product:'Товар / предложение',ad:'Рекламное место',ai:'AI-инструмент',game:'Игра / приложение',form:'Форма / заявка',page:'Страница / профиль'};
+    recordEvent('window_open',{objectId:o.id,label:o.title||o.label,windowKind:o.windowKind||'blank'});
+    const body=`<div style="padding:12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel2)"><strong>${escapeHTML(kinds[o.windowKind]||kinds.blank)}</strong><p style="white-space:pre-wrap;margin:8px 0 0">${escapeHTML(o.text||'Содержимое окна')}</p><small style="color:var(--muted)">Окно LEAF Studio · ${escapeHTML(o.id)}</small></div>`;
+    openModal(o.title||'Окно экосистемы',o.text||'Окно открыто.',body,o.actionLabel||'Закрыть',()=>{
+      if(o.link&&/^https:\/\//i.test(o.link))window.open(o.link,'_blank','noopener,noreferrer');
+    });return;
+  }
+  if(o.link&&['text','image','card','nav','userpanel'].includes(o.type)){
+    const link=String(o.link).trim();
+    if(link.startsWith('#')){
+      const target=stage.querySelector(link);
+      if(target)target.scrollIntoView({behavior:'smooth',block:'center'});
+      else notify('Целевой блок не найден: '+link);return;
+    }
+    if(/^https:\/\//i.test(link)){
+      openModal('Внешняя ссылка','Перейти?',null,'Открыть',()=>window.open(link,'_blank','noopener,noreferrer'));return;
+    }
+  }
+  if(projectType==='game'&&o.type==='coin'){
+    o.visible=false;const count=Number(stage.dataset.score||0)+1;stage.dataset.score=count;
+    notify('Монеты: '+count);renderAll();scheduleSave();return;
+  }
+  if(o.type==='button'||o.type==='ad'){
+    if(/лайк|нравит|like/i.test(String(o.text||''))){
+      recordEvent('like',{objectId:o.id,label:o.label,text:o.text});
+      notify('Лайк учтён');return;
+    }
+    const link=String(o.link||'').trim();
+    if(link.startsWith('#')){
+      const target=stage.querySelector(link);
+      if(target)target.scrollIntoView({behavior:'smooth',block:'center'});
+      else notify('Якорь не создан: '+link);
+    }else if(/^https:\/\//i.test(link)){
+      openModal('Внешняя ссылка','Открыть?',null,'Открыть',()=>window.open(link,'_blank','noopener,noreferrer'));
+    }else if(link)notify('Разрешены только якоря и HTTPS-ссылки');
+    else notify('Не задано действие');
+  }
+}
+function applyAnimation(o){
+  const el=$(`.stage-object[data-id="${o.id}"]`);if(!el)return;
+  el.classList.remove('anim-fade','anim-fadeout','anim-float','anim-pulse','anim-bounce');
+  void el.offsetWidth;
+  if(o.animation&&o.animation!=='none'){
+    el.classList.add('anim-'+o.animation);
+    setTimeout(()=>el.classList.remove('anim-'+o.animation),2200);
+  }
+}
+
+function importFiles(fileList){
+  const files=[...fileList];if(!files.length)return;
+  const valid=files.filter(f=>/^image\/(png|jpeg|webp|gif)$/.test(f.type));
+  if(valid.length!==files.length)notify('Пропущены: разрешены PNG, JPG, WEBP, GIF');
+  valid.forEach(file=>{
+    if(file.size>MAX_IMAGE_BYTES){notify(file.name+': больше 5 МБ');return;}
+    const reader=new FileReader();
+    reader.onload=()=>{
+      markHistory();
+      const name=file.name.replace(/\.[^.]+$/,'');
+      const selected=getSelected();
+      if(selected&&['image','popup'].includes(selected.type)){
+        selected.src=String(reader.result);selected.alt=file.name;
+        if(selected.type==='image')selected.label=name||'Изображение';
+        renderAll();notify('Изображение добавлено');
+      }else{
+        addObject('image',{label:name||'Изображение',text:'',src:String(reader.result),alt:name||'Изображение',x:80+(objects.length%5)*28,y:80+(objects.length%7)*25});
+      }
+      scheduleSave();
+    };
+    reader.onerror=()=>notify('Ошибка чтения '+file.name);
+    reader.readAsDataURL(file);
+  });
+  const inp=$('#imageUpload'); if(inp) inp.value='';
+}
+function scheduleSave(){
+  clearTimeout(scheduleSave.timer);
+  const s=$('#saveStatus'); if(s) s.textContent='Есть изменения…';
+  scheduleSave.timer=setTimeout(saveProject,350);
+}
+function saveProject(){
+  try{
+    const raw=snapshot();
+    localStorage.setItem(STORAGE_KEY,raw);
+    localStorage.setItem(UI_KEY,JSON.stringify({theme:document.body.classList.contains('dark')?'dark':'light',gridEnabled,zoom,previewDevice}));
+    lastSavedSnapshot=raw;
+    const s=$('#saveStatus'); if(s) s.textContent='Сохранено локально';
+    publishBridge();
+    onlineApi.saveProject({raw, updatedAt:new Date().toISOString()}).catch(()=>{});
+  }catch(err){
+    console.error(err);
+    const s=$('#saveStatus'); if(s) s.textContent='Не удалось сохранить';
+    notify('Хранилище переполнено. Уменьши изображения или экспортируй проект.');
+  }
+}
+function loadProject(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){restoreSnapshot(raw);lastSavedSnapshot=raw;}
+    else{
+      objects=[
+        normalizeObject({id:uid(),type:'text',...deepCopy(defaults.text),text:'Создай свою страницу',fontSize:34,color:'#1f2a20',w:460,h:70,layer:0}),
+        normalizeObject({id:uid(),type:'text',...deepCopy(defaults.text),text:'Перетаскивай элементы. Загружай изображения.',x:82,y:145,w:620,h:52,fontSize:16,color:'#7b8794',layer:1}),
+        normalizeObject({id:uid(),type:'button',...deepCopy(defaults.button),x:82,y:220,text:'Начать',layer:2})
+      ];
+      selectedId=objects[2].id;markHistory();renderAll();
+    }
+  }catch(err){
+    console.error('Не удалось загрузить проект',err);
+    notify('Не удалось загрузить локальный проект');
+  }
+}
+function exportProject(){
+  const exported=objects.filter(o=>o.visible).map(o=>{
+    const style=`left:${o.x}px;top:${o.y}px;width:${o.w}px;height:${o.h}px;position:absolute;box-sizing:border-box;z-index:${o.layer||0};transform:rotate(${o.rotation||0}deg);opacity:${(o.opacity??100)/100};background:${o.background||'transparent'};color:${o.color||'#222'};font-size:${o.fontSize||16}px;border-radius:${o.radius||0}px;`;
+    let content='';
+    if(o.type==='image'&&o.src)content=`<img src="${o.src}" alt="${escapeHTML(o.alt||'Изображение')}" style="width:100%;height:100%;object-fit:cover">`;
+    else if(o.type==='button')content=`<a href="${escapeHTML(safeLink(o.link||'#'))}" style="display:grid;place-items:center;width:100%;height:100%;color:inherit;text-decoration:none;background:${escapeHTML(o.background||'#3390ec')};border-radius:${o.radius||10}px;font-weight:600">${escapeHTML(o.text)}</a>`;
+    else if(o.type==='input')content=`<input placeholder="${escapeHTML(o.text)}" style="width:100%;height:100%;border:0;background:transparent">`;
+    else if(o.type==='video'&&/^https:\/\//i.test(String(o.videoUrl||'')))content=`<video src="${escapeHTML(o.videoUrl)}" controls playsinline style="width:100%;height:100%;object-fit:cover"></video>`;
+    else if(o.type==='nav')content=`<nav style="display:flex;gap:8px;align-items:center;width:100%;height:100%;padding:8px;overflow:auto;background:#fff;border-radius:${o.radius||12}px"><span style="font-weight:600">${escapeHTML(o.text)}</span></nav>`;
+    else if(o.type==='userpanel')content=`<div style="display:flex;align-items:center;gap:10px;padding:10px;width:100%;height:100%;background:#fff;border-radius:${o.radius||14}px"><span style="display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#54b3ff,#3390ec);color:#fff;font-weight:700">U</span>${escapeHTML(o.text||'Пользователь')}</div>`;
+    else if(o.type==='popup')content=`<div style="position:fixed;inset:0;background:rgba(0,0,0,${Math.max(0,Math.min(90,Number(o.overlayOpacity)||46))/100});display:grid;place-items:center;z-index:9999"><section style="position:relative;max-width:calc(100% - 24px);padding:18px;background:${escapeHTML(o.background||'#fff')};border-radius:${o.radius||16}px"><button onclick="this.closest('div').remove()" style="float:right">${escapeHTML(o.closeLabel||'Закрыть')} ×</button><div style="white-space:pre-wrap;margin-top:28px">${escapeHTML(o.text||'')}</div></section></div>`;
+    else if(o.type==='htmlgame')content=`<iframe title="HTML-блок" sandbox="allow-scripts allow-forms" style="width:100%;height:100%;border:0" srcdoc="${escapeHTML(buildSandboxDocument(o.htmlCode||'',o.htmlResponsive!==false))}"></iframe>`;
+    else content=escapeHTML(o.text||'');
+    return `<div style="${style}">${content}</div>`;
+  }).join('\n');
+
+  const title=($('#projectName')?.value||'LEAF').trim()||'LEAF';
+  const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(title)}</title><style>*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;user-select:none}body{overflow-x:hidden}.page{position:relative;width:960px;height:${pageHeight}px;margin:0 auto;overflow:hidden;background:white;transform-origin:top center}@media(max-width:960px){.page{transform:scale(calc(100vw / 960));margin-bottom:calc(${pageHeight}px * (100vw / 960 - 1))}}</style></head><body><main class="page">${exported}</main></body></html>`;
+
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=(title).replace(/[^\w\-а-яА-ЯёЁ]+/g,'_')+'.html';
+  a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  notify('HTML экспортирован.');
+}
+
+function setZoom(next){
+  zoom=Math.max(.2,Math.min(1.5,next));
+  stageShell.style.transform=`scale(${zoom})`;
+  stageShell.style.transformOrigin='top center';
+  stageShell.style.marginBottom=(previewMode?pageHeight*(zoom-1):22+pageHeight*(zoom-1))+'px';
+  const l=$('#zoomLabel'); if(l) l.textContent=Math.round(zoom*100)+'%';
+}
+
+function applyPreviewDevice(){
+  const widths={desktop:960,tablet:768,mobile:390};
+  const target=previewMode?(widths[previewDevice]||960):960;
+  const ratio=target/960;
+  stageShell.style.width=target+'px';
+  stageShell.style.height=(previewMode?pageHeight*ratio:pageHeight+26)+'px';
+  stageShell.style.minHeight=stageShell.style.height;
+  stageShell.style.overflow=previewMode?'hidden':'visible';
+  stage.style.width='960px';
+  stage.style.height=pageHeight+'px';
+  stage.style.minHeight=pageHeight+'px';
+  stage.style.transform=previewMode?`scale(${ratio})`:'';
+  stage.style.transformOrigin='top left';
+  const lbl=$('#stageLabel'); if(lbl) lbl.textContent=previewMode?'ПРЕДПРОСМОТР · '+target+' PX':(projectType==='game'?'ИГРОВАЯ СЦЕНА / 960 PX':'СТРАНИЦА / 960 PX');
+  const sz=$('#stageSize'); if(sz) sz.textContent=previewMode?`${target} × ${Math.round(pageHeight*ratio)}`:`960 × ${pageHeight}`;
+  const extend=$('#extendPageBtn');if(extend)extend.style.display=previewMode?'none':'inline-flex';
+}
+
+function fitCanvas(){
+  applyPreviewDevice();
+  const available=Math.max(180,canvasWrap.clientWidth-(previewMode?16:40));
+  const target=previewMode?({desktop:960,tablet:768,mobile:390}[previewDevice]||960):960;
+  setZoom(Math.min(1,available/target));
+}
+function setPreviewDevice(device){
+  previewDevice=device;
+  $$('[data-device]').forEach(b=>b.classList.toggle('selected',b.dataset.device===device));
+  fitCanvas();
+}
+function extendPage(){markHistory();pageHeight+=500;renderAll();scheduleSave();notify('Высота: '+pageHeight+' px');}
+function duplicateSelected(){
+  const o=getSelected();if(!o)return;
+  markHistory();const copy=deepCopy(o);
+  copy.id=uid();copy.label=(copy.label||copy.type)+' — копия';
+  copy.x+=24;copy.y+=24;copy.layer=objects.length;
+  objects.push(copy);selectedId=copy.id;renderAll();scheduleSave();
+}
+function deleteSelected(){if(!selectedId)return;markHistory();objects=objects.filter(o=>o.id!==selectedId);selectedId=null;renderAll();scheduleSave();}
+function moveLayer(id,delta){
+  const i=objects.findIndex(o=>o.id===id);if(i<0)return;
+  const j=Math.max(0,Math.min(objects.length-1,i+delta));if(i===j)return;
+  markHistory();
+  const [o]=objects.splice(i,1);objects.splice(j,0,o);
+  objects.forEach((x,idx)=>{x.layer=idx;});
+  renderAll();scheduleSave();
+}
+function updateProp(key,value){
+  const o=getSelected();if(!o)return;
+  markHistory();
+  if(['x','y','w','h','rotation','opacity','fontSize','radius','overlayOpacity'].includes(key)){
+    value=Number(value);if(!Number.isFinite(value))return;
+  }
+  if(['visible','locked','siteShadow','htmlResponsive'].includes(key))value=value==='true';
+  if(key==='w'||key==='h')value=Math.max(20,value);
+  o[key]=value;renderAll();scheduleSave();
+}
+
+document.addEventListener('click',e=>{
+  const add=e.target.closest('[data-add]');if(add){addObject(add.dataset.add);hideCanvasContextMenu();return;}
+  const select=e.target.closest('[data-select]');if(select){selectObject(select.dataset.select);return;}
+  const insertGame=e.target.closest('[data-insert-game]');
+  if(insertGame){
+    const id=insertGame.dataset.insertGame;
+    const game=(devGamesCache||[]).find(g=>g&&g.id===id);
+    if(!game){notify('Игра не найдена');return;}
+    addObject('htmlgame',{label:game.title||'HTML-блок',htmlCode:game.htmlCode||'',htmlResponsive:true});
+    notify('Вставлено: '+(game.title||'игра'));
+    return;
+  }
+  const visible=e.target.closest('[data-layer-visible]');
+  if(visible){
+    const o=objects.find(x=>x.id===visible.dataset.layerVisible);
+    if(o){markHistory();o.visible=!o.visible;renderAll();scheduleSave();}return;
+  }
+  const up=e.target.closest('[data-layer-up]');if(up){moveLayer(up.dataset.layerUp,1);return;}
+  const down=e.target.closest('[data-layer-down]');if(down){moveLayer(down.dataset.layerDown,-1);return;}
+  if(e.target.closest('[data-duplicate]')){duplicateSelected();return;}
+  if(e.target.closest('[data-delete]')){deleteSelected();return;}
+  if(e.target.closest('[data-upload-selected]')){$('#imageUpload')?.click();return;}
+});
+
+panelContent.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.matches('[data-prop]'))updateProp(el.dataset.prop,el.value);
+  else if(el.id==='projectTypeSelect'){projectType=el.value;updateModeUI();scheduleSave();}
+});
+panelContent.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.matches('[data-prop]')&&['label','text','alt','src','link','videoUrl','dataKey','dataValue','anchorId','closeLabel'].includes(el.dataset.prop)){
+    const o=getSelected();if(o){
+      o[el.dataset.prop]=el.value;
+      const pos=el.selectionStart;
+      renderAll();
+      const next=$(`[data-prop="${el.dataset.prop}"]`,panelContent);
+      if(next){next.focus();try{next.setSelectionRange(pos,pos);}catch(_){}}
+      scheduleSave();
+    }
+  }
+});
+
+$$('#panelTabs button').forEach(b=>b.addEventListener('click',()=>{
+  activeTab=b.dataset.tab;
+  if(activeTab==='layers')activePanel='layers';
+  else if(activeTab==='properties')activePanel='elements';
+  else if(activeTab==='media')activePanel='media';
+  else if(activeTab==='animation')activePanel='motion';
+  renderPanel();
+}));
+
+$('#imageUpload')?.addEventListener('change',e=>importFiles(e.target.files));
+panelContent.addEventListener('focusin',e=>{if(e.target.matches('[data-prop="htmlCode"]'))markHistory();});
+panelContent.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.matches('[data-prop="htmlCode"]')){
+    const o=getSelected();
+    if(o){o.htmlCode=el.value;scheduleSave();}
+  }
+});
+$('#panelContent').addEventListener('click',e=>{
+  if(e.target.closest('#loadHtmlFileBtn')){$('#htmlFileUpload')?.click();return;}
+  if(e.target.closest('#panelUploadBtn'))$('#imageUpload').click();
+  if(e.target.closest('#testAnimationBtn')){const o=getSelected();if(o)applyAnimation(o);else notify('Выбери объект');}
+  if(e.target.closest('#dataDemoBtn')){
+    const o=getSelected();
+    if(!o){notify('Выбери объект');return;}
+    notify('Ключ: '+(o.dataKey||o.id)+' · значение: '+(o.dataValue||o.text||''));
+  }
+});
+panelContent.addEventListener('change',e=>{
+  if(e.target.id==='htmlFileUpload'){
+    const file=e.target.files&&e.target.files[0];
+    const o=getSelected();
+    if(!file||!o||o.type!=='htmlgame')return;
+    if(file.size>500000){notify('Файл больше 500 КБ');e.target.value='';return;}
+    const reader=new FileReader();
+    reader.onload=()=>{markHistory();o.htmlCode=String(reader.result||'');o.label=file.name.replace(/\.(html?)$/i,'')||o.label;renderAll();scheduleSave();notify('HTML загружен');};
+    reader.onerror=()=>notify('Ошибка чтения HTML');
+    reader.readAsText(file);
+  }
+});
+
+$('#extendPageBtn')?.addEventListener('click',extendPage);
+
+function togglePreview(){
+  previewMode=!previewMode;
+  $('.app').classList.toggle('preview-mode',previewMode);
+  canvasWrap.classList.toggle('preview',previewMode);
+  rightPanel.classList.toggle('hidden',previewMode);
+  const pt=$('#previewTools'); if(pt) pt.style.display=previewMode?'flex':'none';
+  const pb=$('#previewBtn'); if(pb) pb.innerHTML=previewMode?'✎ Редактировать':'▶️ Предпросмотр';
+  selectedId=null;
+  renderAll();
+  requestAnimationFrame(()=>{fitCanvas();canvasWrap.scrollTop=0;canvasWrap.scrollLeft=0;});
+  if(previewMode){
+    recordEvent('view',{device:previewDevice,project:$('#projectName')?.value},false);
+    objects.filter(o=>o.animationTrigger==='load'&&o.animation!=='none').forEach(o=>applyAnimation(o));
+  }else{
+    hideObjectContextMenu();requestAnimationFrame(fitCanvas);
+  }
+}
+$$('[data-device]').forEach(b=>b.addEventListener('click',()=>setPreviewDevice(b.dataset.device)));
+
+window.addEventListener('resize',()=>{if(previewMode)fitCanvas();else if(window.innerWidth<900)fitCanvas();renderRulers();});
+
+canvasWrap.addEventListener('scroll',()=>{
+  if(!previewMode)return;
+  for(const o of objects.filter(x=>x.animationTrigger==='scroll'&&x.animation!=='none')){
+    const el=$(`.stage-object[data-id="${o.id}"]`);
+    if(el&&el.getBoundingClientRect().top<window.innerHeight&&el.getBoundingClientRect().bottom>0&&!el.dataset.scrollAnimated){
+      el.dataset.scrollAnimated='1';applyAnimation(o);
+    }
+  }
+});
+
+$('#previewBtn')?.addEventListener('click',togglePreview);
+$('#exportBtn')?.addEventListener('click',exportProject);
+$('#saveBtn').addEventListener('click',()=>{saveProject();notify('Сохранено');});
+$('#undoBtn')?.addEventListener('click',undo);
+$('#redoBtn')?.addEventListener('click',redo);
+$('#zoomIn').addEventListener('click',()=>setZoom(zoom+.1));
+$('#zoomOut').addEventListener('click',()=>setZoom(zoom-.1));
+$('#fitBtn').addEventListener('click',fitCanvas);
+
+$('#themeBtn')?.addEventListener('click',()=>{
+  document.body.classList.toggle('dark');
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=document.body.classList.contains('dark')?'#17212b':'#3390ec';
+  saveProject();
+});
+$('#closePanelBtn').addEventListener('click',()=>rightPanel.classList.remove('open'));
+
+/* Профиль */
+let profileLongTimer=null;
+$('#profileBtn')?.addEventListener('click',e=>{e.stopPropagation();$('#profilePopover').classList.toggle('open');});
+$('#profileBtn')?.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();openProfileMenu(e.clientX,e.clientY);});
+$('#profileBtn')?.addEventListener('touchstart',()=>{profileLongTimer=setTimeout(()=>{const r=$('#profileBtn').getBoundingClientRect();openProfileMenu(r.left,r.top-4);},600);},{passive:true});
+$('#profileBtn')?.addEventListener('touchend',()=>clearTimeout(profileLongTimer),{passive:true});
+$('#profileBtn')?.addEventListener('touchmove',()=>clearTimeout(profileLongTimer),{passive:true});
+
+function openProfileMenu(x,y){
+  const menu=$('#profileMenu');
+  menu.classList.add('open');
+  const w=menu.offsetWidth||240,h=menu.offsetHeight||160;
+  menu.style.left=Math.min(x,window.innerWidth-w-8)+'px';
+  menu.style.top=Math.min(y-h,window.innerHeight-h-8)>8?Math.min(y-h,window.innerHeight-h-8):(y+8)+'px';
+}
+$('#profileMenu').addEventListener('click',e=>{
+  const b=e.target.closest('[data-profile-action]');if(!b)return;
+  const action=b.dataset.profileAction;
+  $('#profileMenu').classList.remove('open');
+  if(action==='plugins'){
+    openModal('Плагины','Локальный список плагинов. Сервер не подключён.','<div class="empty">Плагины появятся после подключения бэкенда.</div>');
+  }else if(action==='gradient'){
+    openGradientMenu(window.innerWidth-260, window.innerHeight-120, $('#profileBtn'), 'profile');
+  }else if(action==='theme'){
+    document.body.classList.toggle('dark');
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.content=document.body.classList.contains('dark')?'#17212b':'#3390ec';
+    saveProject();
+    notify(document.body.classList.contains('dark')?'Тёмная тема':'Светлая тема');
+  }
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#profilePopover')&&!e.target.closest('[data-dock-id="profile"]')&&!e.target.closest('#profileBtn'))$('#profilePopover').classList.remove('open');
+  if(!e.target.closest('#profileMenu'))$('#profileMenu').classList.remove('open');
+});
+$$('[data-profile]').forEach(b=>b.addEventListener('click',()=>{
+  const key=b.dataset.profile;$('#profilePopover').classList.remove('open');
+  if(key==='builder'){rightPanel.classList.add('open');return;}
+  if(key==='sites'){openModal('Мои сайты и игры','Игры из Панели разработчика вставляются как HTML-блоки.');return;}
+  renderProfileModal(key);
+}));
+
+document.querySelectorAll('[data-bridge], a.developer-link').forEach(a=>a.addEventListener('click',()=>{publishBridge();}));
+
+$('#modalCancel').addEventListener('click',()=>$('#modalBackdrop').classList.remove('open'));
+$('#modalBackdrop').addEventListener('click',e=>{if(e.target===$('#modalBackdrop'))$('#modalBackdrop').classList.remove('open');});
+$('#projectName')?.addEventListener('input',scheduleSave);
+
+/* ПКМ по пустому месту холста */
+const canvasMenu=$('#canvasContextMenu');
+function openCanvasContextMenu(x,y){
+  canvasMenu.classList.add('open');
+  const w=canvasMenu.offsetWidth||240,h=canvasMenu.offsetHeight||360;
+  canvasMenu.style.left=Math.min(x,window.innerWidth-w-8)+'px';
+  canvasMenu.style.top=Math.min(y,window.innerHeight-h-8)+'px';
+}
+function hideCanvasContextMenu(){canvasMenu.classList.remove('open');}
+canvasWrap.addEventListener('contextmenu',e=>{
+  if(previewMode)return;
+  if(e.target.closest('.stage-object'))return;
+  if(e.target.closest('input,textarea,[contenteditable]'))return;
+  e.preventDefault();
+  openCanvasContextMenu(e.clientX,e.clientY);
+});
+document.addEventListener('click',e=>{if(!e.target.closest('#canvasContextMenu'))hideCanvasContextMenu();});
+canvasMenu.addEventListener('click',e=>{
+  const add=e.target.closest('[data-add]');if(add){addObject(add.dataset.add);hideCanvasContextMenu();return;}
+  const act=e.target.closest('[data-canvas-action]');
+  if(act){
+    const a=act.dataset.canvasAction;
+    if(a==='upload'){$('#imageUpload').click();}
+    hideCanvasContextMenu();
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;
+  if(previewMode&&projectType==='game'&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s'].includes(e.key)){
+    const player=objects.find(o=>o.type==='player'&&o.visible);
+    if(player){
+      e.preventDefault();
+      const step=e.shiftKey?20:8;
+      if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')player.x=Math.max(0,player.x-step);
+      if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')player.x=Math.min(960-player.w,player.x+step);
+      if(e.key==='ArrowUp'||e.key.toLowerCase()==='w')player.y=Math.max(0,player.y-step);
+      if(e.key==='ArrowDown'||e.key.toLowerCase()==='s')player.y=Math.min(pageHeight-player.h,player.y+step);
+      const pe=$(`.stage-object[data-id="${player.id}"]`);
+      if(pe){pe.style.left=player.x+'px';pe.style.top=player.y+'px';}
+      for(const coin of objects.filter(o=>o.type==='coin'&&o.visible)){
+        if(player.x<coin.x+coin.w&&player.x+player.w>coin.x&&player.y<coin.y+coin.h&&player.y+player.h>coin.y){
+          coin.visible=false;stage.dataset.score=Number(stage.dataset.score||0)+1;notify('Монеты: '+stage.dataset.score);
+          const ce=$(`.stage-object[data-id="${coin.id}"]`);if(ce)ce.style.display='none';
+        }
+      }
+      scheduleSave();return;
+    }
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject();notify('Сохранено');}
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='e'){e.preventDefault();exportProject();}
+  if((e.key==='Delete'||e.key==='Backspace')&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)&&!previewMode)deleteSelected();
+  if(e.key==='Escape'){$('#profilePopover').classList.remove('open');$('#profileMenu').classList.remove('open');$('#modalBackdrop').classList.remove('open');hideCanvasContextMenu();if(window.innerWidth<900)rightPanel.classList.remove('open');}
+});
+
+window.addEventListener('beforeunload',()=>{if(snapshot()!==lastSavedSnapshot)saveProject();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveProject();});
+
+async function authenticateUser(){return {authenticated:false,reason:'backend_not_connected'};}
+async function publishProject(){notify('Публикация не подключена: доступен экспорт HTML');return false;}
+async function uploadMediaToCloud(){throw new Error('Облако не подключено');}
+function runUserScriptSafely(){return {ok:false,error:'Исполнитель не подключён'};}
+async function submitFormData(){throw new Error('Сервер форм не подключён');}
+async function recordAdImpression(){return {recorded:false,reason:'no_backend'};}
+function connectCollaboration(){return {connected:false,reason:'no_backend'};}
+
+loadProject();updateInboxBadge();
+try{
+  const ui=JSON.parse(localStorage.getItem(UI_KEY)||'{}');
+  if(ui.theme==='dark')document.body.classList.add('dark');
+  gridEnabled=!!ui.gridEnabled;
+  setZoom(Number(ui.zoom)||1);
+  if(ui.previewDevice)previewDevice=ui.previewDevice;
+  $$('[data-device]').forEach(b=>b.classList.toggle('selected',b.dataset.device===previewDevice));
+  renderAll();
+}catch(_){setZoom(1);}
+refreshDevGames().catch(()=>{});
+renderDock();
+
+(async ()=>{
+  try{
+    const last=JSON.parse(localStorage.getItem(LAST_GAME_KEY)||'null');
+    if(last && last.id){
+      const list=await dbGetAllGames();
+      const game=list.find(g=>g.id===last.id);
+      if(game){
+        addObject('htmlgame',{label:game.title||'HTML-блок',htmlCode:game.htmlCode||'',htmlResponsive:true});
+        notify('Игра из панели разработчика добавлена: '+(game.title||''));
+      }
+      localStorage.removeItem(LAST_GAME_KEY);
+    }
+  }catch(_){}
+})();
+
+window.addEventListener('resize',()=>{if(window.innerWidth<700&&zoom===1)fitCanvas();renderRulers();});
+})();
+</script>
+</body>
+</html>
